@@ -1,4 +1,3 @@
-// use swc_core::ecma::visit::VisitMutWith;
 use swc_core::{
     common::{
         SourceMap,
@@ -13,7 +12,7 @@ use swc_core::{
 
 #[derive(Clone)]
 struct WhitelabelDirective {
-    target: Option<String>,
+    targets: Vec<String>, // <-- Changed to a Vec to hold multiple!
     key: Option<String>,
 }
 
@@ -60,26 +59,26 @@ impl<'a> WhitelabelCollector<'a> {
         for comment in leading_comments {
             let text = comment.text.trim();
             if let Some(rest) = text.strip_prefix("whitelabel") {
-                let Some(directive) = rest.strip_prefix(":") else {
-                    return Some(WhitelabelDirective {
-                        target: None,
-                        key: None,
-                    });
-                };
+                let directive = rest.trim_start_matches(':');
 
-                let mut target = None;
+                let mut targets = Vec::new();
                 let mut key = None;
 
                 for part in directive.split(',') {
                     let part = part.trim();
                     if let Some(t) = part.strip_prefix("for=") {
-                        target = Some(t.trim().to_string());
+                        targets.push(t.trim().to_string());
                     } else if let Some(k) = part.strip_prefix("key=") {
                         key = Some(k.trim().to_string());
                     }
                 }
 
-                return Some(WhitelabelDirective { target, key });
+                // Smart Fallback: If no `for=` is provided, use the default!
+                if targets.is_empty() {
+                    targets.push(self.default_target.clone());
+                }
+
+                return Some(WhitelabelDirective { targets, key });
             }
         }
         None
@@ -89,29 +88,40 @@ impl<'a> WhitelabelCollector<'a> {
 impl<'a> Visit for WhitelabelCollector<'a> {
     // Catch standard `export const` and `export function`
     fn visit_export_decl(&mut self, export: &ExportDecl) {
-        if let Some(WhitelabelDirective { target, key }) =
+        if let Some(WhitelabelDirective { targets, key }) =
             self.get_whitelabel_target_and_key(export.span)
         {
             match &export.decl {
                 Decl::Var(var_decl) => {
                     if let Some(decl) = var_decl.decls.first() {
                         if let Pat::Ident(ident) = &decl.name {
-                            self.entries.push(WhitelabelEntry {
-                                target: target.unwrap_or(self.default_target.clone()),
-                                key: key.unwrap_or(ident.id.sym.to_string()),
-                                symbol: ident.id.sym.to_string(),
-                                import_path: self.file_path.clone(),
-                            });
+                            let symbol = ident.id.sym.to_string();
+                            let final_key = key.clone().unwrap_or_else(|| symbol.clone());
+
+                            // Loop through all targets and push an entry for each!
+                            for target in targets {
+                                self.entries.push(WhitelabelEntry {
+                                    target,
+                                    key: final_key.clone(),
+                                    symbol: symbol.clone(),
+                                    import_path: self.file_path.clone(),
+                                });
+                            }
                         }
                     }
                 }
                 Decl::Fn(fn_decl) => {
-                    self.entries.push(WhitelabelEntry {
-                        target: target.unwrap_or(self.default_target.clone()),
-                        key: key.unwrap_or(fn_decl.ident.sym.to_string()),
-                        symbol: fn_decl.ident.sym.to_string(),
-                        import_path: self.file_path.clone(),
-                    });
+                    let symbol = fn_decl.ident.sym.to_string();
+                    let final_key = key.clone().unwrap_or_else(|| symbol.clone());
+
+                    for target in targets {
+                        self.entries.push(WhitelabelEntry {
+                            target,
+                            key: final_key.clone(),
+                            symbol: symbol.clone(),
+                            import_path: self.file_path.clone(),
+                        });
+                    }
                 }
                 _ => {
                     let loc = self.source_map.lookup_char_pos(export.span.lo);
