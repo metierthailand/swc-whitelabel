@@ -23,6 +23,7 @@ use swc_core::common::{GLOBALS, Globals};
 mod codemod;
 mod collector;
 mod config;
+mod generator;
 
 fn main() -> Result<()> {
     let cm: Lrc<SourceMap> = Default::default();
@@ -53,7 +54,7 @@ fn main() -> Result<()> {
             let path = entry.as_ref().unwrap();
 
             // Skip the generated file to avoid infinite loops
-            if path.ends_with(cfg.output.as_str()) {
+            if path.to_string_lossy().contains(cfg.output_dir.as_str()) {
                 continue;
             }
 
@@ -79,16 +80,16 @@ fn main() -> Result<()> {
                 }
             };
 
-            // Format import path (e.g., "src/components/branding.tsx" -> "./components/branding")
+            // Format import path (e.g., "src/components/branding.tsx" -> "../components/branding")
             let import_path = format!(
-                "./{}",
+                "../{}",
                 path.with_extension("")
                     .strip_prefix(&cfg.src)
                     .unwrap_or(&path)
                     .display()
             );
 
-            let mut collector = collector::WhitelabelCollector::new(&comments, import_path);
+            let mut collector = collector::WhitelabelCollector::new(&cm, &comments, import_path);
             module.visit_with(&mut collector);
 
             if !collector.errors.is_empty() {
@@ -105,32 +106,40 @@ fn main() -> Result<()> {
             anyhow::bail!("Whitelabel extraction failed due to authoring errors.");
         }
 
-        // Generate the output file
-        all_entries.sort_by(|a, b| a.symbol.cmp(&b.symbol));
-
-        let mut output = String::new();
-        output.push_str("// AUTO-GENERATED: DO NOT EDIT\n\n");
-
-        // Generate Imports
+        // Group entries by target (e.g., trivacafe, martech)
+        let mut grouped_entries: HashMap<String, Vec<&collector::WhitelabelEntry>> = HashMap::new();
         for entry in &all_entries {
-            output.push_str(&format!(
-                "import {{ {} }} from \"{}\";\n",
-                entry.symbol, entry.import_path
+            println!("\t👀 found {} @{}", entry.symbol, entry.import_path);
+            grouped_entries
+                .entry(entry.target.clone())
+                .or_default()
+                .push(entry);
+        }
+
+        let output_dir = format!("{}{}", cfg.src, cfg.output_dir);
+        fs::create_dir_all(&output_dir)?;
+
+        let mut index_exports = String::new();
+        let mut index_configs = String::new();
+
+        for (target, entries) in &grouped_entries {
+            let output = generator::wl::generate(&entries);
+            fs::write(format!("{}/{}.generated.tsx", output_dir, target), output)?;
+
+            index_exports.push_str(&format!(
+                "import {} from \"./{}.generated\";\n",
+                target, target
             ));
+            index_configs.push_str(&format!("  {},\n", target));
         }
 
-        // Generate Object
-        output.push_str("\nconst whitelabel = {\n");
-        for entry in &all_entries {
-            output.push_str(&format!("  {},\n", entry.symbol));
-        }
-        output.push_str("};\n\nexport default whitelabel;\n");
-
-        fs::write(format!("{}{}", cfg.src, cfg.output), output)?;
+        fs::write(
+            format!("{}/index.ts", output_dir),
+            generator::index::generate(index_exports, index_configs),
+        )?;
         println!(
-            "✅ Successfully generated {}{} with {} entries.",
-            cfg.src,
-            cfg.output,
+            "✅ Successfully generated whitelabel registry in {}/ with {} total entries.",
+            output_dir,
             all_entries.len()
         );
         // -----------------------------------------------------------------------------
@@ -144,7 +153,7 @@ fn main() -> Result<()> {
 
         for entry in files {
             let path = entry?;
-            if path.ends_with(cfg.output.as_str()) {
+            if path.to_string_lossy().contains(cfg.output_dir.as_str()) {
                 continue;
             }
 

@@ -7,7 +7,7 @@ use std::fs;
 pub struct WhitelabelConfig {
     pub src: String,
     pub patterns: Vec<String>,
-    pub output: String,
+    pub output_dir: String,
 }
 
 // 2. Helper function to read and parse the config

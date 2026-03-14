@@ -96,7 +96,7 @@ impl VisitMut for WhitelabelRewriter {
                     })],
                     src: Box::new(Str {
                         span: DUMMY_SP,
-                        value: "@/app/whitelabel.generated".into(),
+                        value: "@/app/whitelabel".into(),
                         raw: None,
                     }),
                     type_only: false,
