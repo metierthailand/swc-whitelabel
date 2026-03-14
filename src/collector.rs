@@ -59,8 +59,13 @@ impl<'a> WhitelabelCollector<'a> {
         let leading_comments = self.comments.get_leading(span.lo)?;
         for comment in leading_comments {
             let text = comment.text.trim();
-            if let Some(rest) = text.strip_prefix("whitelabel:") {
-                let directive = rest.trim();
+            if let Some(rest) = text.strip_prefix("whitelabel") {
+                let Some(directive) = rest.strip_prefix(":") else {
+                    return Some(WhitelabelDirective {
+                        target: None,
+                        key: None,
+                    });
+                };
 
                 let mut target = None;
                 let mut key = None;
@@ -72,14 +77,6 @@ impl<'a> WhitelabelCollector<'a> {
                     } else if let Some(k) = part.strip_prefix("key=") {
                         key = Some(k.trim().to_string());
                     }
-                }
-
-                if target.is_none() {
-                    self.errors.push(format!(
-                        "Invalid directive '{}'. Must use 'for=target'.",
-                        directive
-                    ));
-                    return None;
                 }
 
                 return Some(WhitelabelDirective { target, key });

@@ -140,7 +140,7 @@ fn main() -> Result<()> {
 
         fs::write(
             format!("{}/index.ts", output_dir),
-            generator::index::generate(index_exports, index_configs),
+            generator::index::generate(index_exports, index_configs, cfg.default_target),
         )?;
         println!(
             "✅ Successfully generated whitelabel registry in {}/ with {} total entries.",
