@@ -1,0 +1,10 @@
+[package]
+name = "wl-extractor"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+swc_core = { version = "0.86.x", features = ["common", "ecma_ast", "ecma_parser", "ecma_visit", "common_tty"] }
+glob = "0.3.1"
+anyhow = "1.0"
+serde = "=1.0.220" # Pin strictly to the last working version
