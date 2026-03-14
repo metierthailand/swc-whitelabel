@@ -2444,6 +2444,7 @@ dependencies = [
  "anyhow",
  "glob",
  "serde",
+ "serde_json",
  "swc_core",
 ]
 

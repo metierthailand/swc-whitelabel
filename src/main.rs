@@ -1,7 +1,7 @@
 use anyhow::Result;
-use glob::glob;
-use std::collections::HashMap;
+use glob::{GlobError, glob};
 use std::fs;
+use std::{collections::HashMap, path::PathBuf};
 use swc_core::{
     common::{
         Mark, SourceMap,
@@ -22,6 +22,7 @@ use swc_core::common::{GLOBALS, Globals};
 
 mod codemod;
 mod collector;
+mod config;
 
 fn main() -> Result<()> {
     let cm: Lrc<SourceMap> = Default::default();
@@ -29,20 +30,30 @@ fn main() -> Result<()> {
 
     let globals = Globals::new();
 
+    let Ok(cfg) = config::load_config() else {
+        panic!("Failed to load config")
+    };
+
     GLOBALS.set(&globals, || {
         let mut all_entries: Vec<collector::WhitelabelEntry> = vec![];
         let mut has_errors = false;
-        let files: Vec<_> = glob("app/**/*.tsx")
-            .unwrap()
-            .chain(glob("app/**/*.ts").unwrap())
-            .collect();
+        let mut files: Vec<Result<PathBuf, GlobError>> = vec![];
+
+        for pattern in cfg.patterns {
+            let Ok(paths) = glob(format!("{}{}", cfg.src, pattern).as_str()) else {
+                panic!("Failed to load {}", pattern)
+            };
+            for p in paths {
+                files.push(p);
+            }
+        }
 
         // Scan for TSX files
         for entry in &files {
             let path = entry.as_ref().unwrap();
 
             // Skip the generated file to avoid infinite loops
-            if path.ends_with("whitelabel.generated.tsx") {
+            if path.ends_with(cfg.output.as_str()) {
                 continue;
             }
 
@@ -72,7 +83,7 @@ fn main() -> Result<()> {
             let import_path = format!(
                 "./{}",
                 path.with_extension("")
-                    .strip_prefix("src/")
+                    .strip_prefix(&cfg.src)
                     .unwrap_or(&path)
                     .display()
             );
@@ -119,9 +130,11 @@ fn main() -> Result<()> {
         }
         output.push_str("};\n\nexport default whitelabel;\n");
 
-        fs::write("app/whitelabel.generated.tsx", output)?;
+        fs::write(format!("{}{}", cfg.src, cfg.output), output)?;
         println!(
-            "✅ Successfully generated src/whitelabel.generated.tsx with {} entries.",
+            "✅ Successfully generated {}{} with {} entries.",
+            cfg.src,
+            cfg.output,
             all_entries.len()
         );
         // -----------------------------------------------------------------------------
@@ -135,7 +148,7 @@ fn main() -> Result<()> {
 
         for entry in files {
             let path = entry?;
-            if path.ends_with("whitelabel.generated.tsx") {
+            if path.ends_with(cfg.output.as_str()) {
                 continue;
             }
 
