@@ -8,6 +8,7 @@ pub struct WhitelabelConfig {
     pub src: String,
     pub patterns: Vec<String>,
     pub output_dir: String,
+    pub default_target: String,
 }
 
 // 2. Helper function to read and parse the config

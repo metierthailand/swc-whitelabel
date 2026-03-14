@@ -89,7 +89,12 @@ fn main() -> Result<()> {
                     .display()
             );
 
-            let mut collector = collector::WhitelabelCollector::new(&cm, &comments, import_path);
+            let mut collector = collector::WhitelabelCollector::new(
+                &cm,
+                &comments,
+                import_path,
+                cfg.default_target.clone(),
+            );
             module.visit_with(&mut collector);
 
             if !collector.errors.is_empty() {
@@ -148,7 +153,7 @@ fn main() -> Result<()> {
         println!("🚀 Starting codemod pass to rewrite references...");
         let mut global_symbols = HashMap::new();
         for entry in &all_entries {
-            global_symbols.insert(entry.symbol.clone(), entry.symbol.clone());
+            global_symbols.insert(entry.symbol.clone(), entry.key.clone());
         }
 
         for entry in files {
