@@ -9,7 +9,6 @@ use swc_core::{
 
 #[derive(Debug)]
 pub struct WhitelabelEntry {
-    pub key: String,
     pub symbol: String,
     pub import_path: String,
 }
@@ -32,18 +31,18 @@ impl<'a> WhitelabelCollector<'a> {
     }
 
     /// Robustly scans all leading comments for the whitelabel directive
-    fn get_whitelabel_key(&mut self, span: swc_core::common::Span) -> Option<String> {
+    fn get_whitelabel_key(&mut self, span: swc_core::common::Span) -> Option<bool> {
         let leading_comments = self.comments.get_leading(span.lo)?;
         for comment in leading_comments {
             let text = comment.text.trim();
-            if let Some(rest) = text.strip_prefix("whitelabel:") {
+            if let Some(rest) = text.strip_prefix("whitelabel") {
                 let key = rest.trim().to_string();
                 if key.contains('.') {
                     self.errors
                         .push(format!("Forbidden dotted key '{}' found.", key));
                     return None;
                 }
-                return Some(key);
+                return Some(true);
             }
         }
         None
@@ -53,13 +52,12 @@ impl<'a> WhitelabelCollector<'a> {
 impl<'a> Visit for WhitelabelCollector<'a> {
     // Catch standard `export const` and `export function`
     fn visit_export_decl(&mut self, export: &ExportDecl) {
-        if let Some(key) = self.get_whitelabel_key(export.span) {
+        if let Some(_) = self.get_whitelabel_key(export.span) {
             match &export.decl {
                 Decl::Var(var_decl) => {
                     if let Some(decl) = var_decl.decls.first() {
                         if let Pat::Ident(ident) = &decl.name {
                             self.entries.push(WhitelabelEntry {
-                                key,
                                 symbol: ident.id.sym.to_string(),
                                 import_path: self.file_path.clone(),
                             });
@@ -68,15 +66,13 @@ impl<'a> Visit for WhitelabelCollector<'a> {
                 }
                 Decl::Fn(fn_decl) => {
                     self.entries.push(WhitelabelEntry {
-                        key,
                         symbol: fn_decl.ident.sym.to_string(),
                         import_path: self.file_path.clone(),
                     });
                 }
-                _ => self.errors.push(format!(
-                    "Unsupported export declaration for whitelabel key '{}'",
-                    key
-                )),
+                _ => self
+                    .errors
+                    .push(format!("Unsupported export declaration for whitelabel",)),
             }
         }
         export.visit_children_with(self);

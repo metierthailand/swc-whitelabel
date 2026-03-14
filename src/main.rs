@@ -106,7 +106,7 @@ fn main() -> Result<()> {
         }
 
         // Generate the output file
-        all_entries.sort_by(|a, b| a.key.cmp(&b.key));
+        all_entries.sort_by(|a, b| a.symbol.cmp(&b.symbol));
 
         let mut output = String::new();
         output.push_str("// AUTO-GENERATED: DO NOT EDIT\n\n");
@@ -122,11 +122,7 @@ fn main() -> Result<()> {
         // Generate Object
         output.push_str("\nconst whitelabel = {\n");
         for entry in &all_entries {
-            if entry.key == entry.symbol {
-                output.push_str(&format!("  {},\n", entry.key));
-            } else {
-                output.push_str(&format!("  {}: {},\n", entry.key, entry.symbol));
-            }
+            output.push_str(&format!("  {},\n", entry.symbol));
         }
         output.push_str("};\n\nexport default whitelabel;\n");
 
@@ -143,7 +139,7 @@ fn main() -> Result<()> {
         println!("🚀 Starting codemod pass to rewrite references...");
         let mut global_symbols = HashMap::new();
         for entry in &all_entries {
-            global_symbols.insert(entry.symbol.clone(), entry.key.clone());
+            global_symbols.insert(entry.symbol.clone(), entry.symbol.clone());
         }
 
         for entry in files {
