@@ -26,6 +26,12 @@ mod config;
 mod generator;
 
 fn main() -> Result<()> {
+    let args: Vec<String> = std::env::args().collect();
+    let file_name_only = args.iter().any(|arg| arg == "--file-name-only");
+
+    // 2. A central registry of every file we write to disk
+    let mut modified_files: Vec<String> = Vec::new();
+
     let cm: Lrc<SourceMap> = Default::default();
     let handler = Handler::with_tty_emitter(ColorConfig::Auto, true, false, Some(cm.clone()));
 
@@ -114,7 +120,9 @@ fn main() -> Result<()> {
         // Group entries by target (e.g., trivacafe, martech)
         let mut grouped_entries: HashMap<String, Vec<&collector::WhitelabelEntry>> = HashMap::new();
         for entry in &all_entries {
-            println!("\t👀 found {} @{}", entry.symbol, entry.import_path);
+            if !file_name_only {
+                println!("\t👀 found {} @{}", entry.symbol, entry.import_path);
+            }
             grouped_entries
                 .entry(entry.target.clone())
                 .or_default()
@@ -129,28 +137,37 @@ fn main() -> Result<()> {
 
         for (target, entries) in &grouped_entries {
             let output = generator::wl::generate(&entries);
-            fs::write(format!("{}/{}.generated.tsx", output_dir, target), output)?;
+            let target_path = format!("{}/{}.generated.tsx", output_dir, target);
+            fs::write(&target_path, output)?;
 
             index_exports.push_str(&format!(
                 "import {} from \"./{}.generated\";\n",
                 target, target
             ));
             index_configs.push_str(&format!("  {},\n", target));
+            modified_files.push(target_path);
         }
 
+        let target_path = format!("{}/index.ts", output_dir);
         fs::write(
-            format!("{}/index.ts", output_dir),
+            &target_path,
             generator::index::generate(index_exports, index_configs, cfg.default_target),
         )?;
-        println!(
-            "✅ Successfully generated whitelabel registry in {}/ with {} total entries.",
-            output_dir,
-            all_entries.len()
-        );
+
+        modified_files.push(target_path);
+
+        if !file_name_only {
+            println!(
+                "✅ Successfully generated whitelabel registry in {}/ with {} total entries.",
+                output_dir,
+                all_entries.len()
+            );
+            println!("🚀 Starting codemod pass to rewrite references...");
+        }
+
         // -----------------------------------------------------------------------------
         // Codemod Pass: Rewrite References Across All Files
         // -----------------------------------------------------------------------------
-        println!("🚀 Starting codemod pass to rewrite references...");
         let mut global_symbols = HashMap::new();
         for entry in &all_entries {
             global_symbols.insert(entry.symbol.clone(), entry.key.clone());
@@ -213,8 +230,22 @@ fn main() -> Result<()> {
                 };
                 emitter.emit_program(&program)?;
                 fs::write(&path, String::from_utf8(buf)?)?;
-                println!("✍️  Rewrote references in {}", path.display());
+                modified_files.push(path.to_string_lossy().to_string());
+
+                if !file_name_only {
+                    println!("✍️  Rewrote references in {}", path.display());
+                }
             }
+        }
+
+        if file_name_only {
+            // Print ONLY the file paths, one per line, so `xargs` can read it perfectly
+            for file in modified_files {
+                println!("{}", file);
+            }
+        } else {
+            // Friendly summary for human execution
+            println!("🎉 Done! Modified {} files.", modified_files.len());
         }
         Ok(())
     })
