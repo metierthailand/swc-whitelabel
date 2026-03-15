@@ -16,7 +16,7 @@ impl Visit for SymbolScanner {
         if let ImportSpecifier::Named(named) = import {
             let imported_name = match &named.imported {
                 Some(ModuleExportName::Ident(ident)) => ident.sym.to_string(),
-                Some(ModuleExportName::Str(s)) => s.value.as_str().unwrap_or("Unknown_WL").into(),
+                Some(ModuleExportName::Str(s)) => s.value.as_str().unwrap().into(),
                 None => named.local.sym.to_string(),
             };
             if let Some(key) = self.global_symbols.get(&imported_name) {

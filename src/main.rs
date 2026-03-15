@@ -20,12 +20,16 @@ use swc_core::{
 
 use swc_core::common::{GLOBALS, Globals};
 
+use crate::ast::whitelabel::WhitelabelScanner;
+
 mod ast;
 mod config;
 mod generator;
+mod module;
 
 fn main() -> Result<()> {
     let args: Vec<String> = std::env::args().collect();
+    // TODO: printer
     let file_name_only = args.iter().any(|arg| arg == "--file-name-only");
 
     //  A central registry of every file we write to disk
@@ -39,6 +43,40 @@ fn main() -> Result<()> {
     let Ok(cfg) = config::load_config() else {
         panic!("Failed to load config")
     };
+
+    // 1. Determine the path to the existing generated file (e.g., `app/whitelabel/triva.generated.tsx`)
+    let existing_default_whitelabel = std::path::PathBuf::from(format!(
+        "{}{}/{}.generated.tsx",
+        cfg.src, cfg.output_dir, cfg.default_target
+    ));
+    let mut existing_whitelabel_scanner = WhitelabelScanner::default();
+
+    // 2. Only run the diffing engine if the old generated file actually exists!
+    if existing_default_whitelabel.exists() {
+        if !file_name_only {
+            println!("🔍 Found previous generated registry. Scanning for existing keys...");
+        }
+
+        // Parse the old file into an AST (using your existing SWC parser setup)
+        if let Ok(fm) = cm.load_file(&existing_default_whitelabel) {
+            let lexer = Lexer::new(
+                Syntax::Typescript(TsSyntax {
+                    tsx: true,
+                    no_early_errors: true,
+                    ..Default::default()
+                }),
+                Default::default(),
+                StringInput::from(&*fm),
+                None,
+            );
+
+            let mut parser = Parser::new_from(lexer);
+
+            if let Ok(old_ast) = parser.parse_program() {
+                old_ast.visit_with(&mut existing_whitelabel_scanner);
+            }
+        }
+    }
 
     GLOBALS.set(&globals, || {
         let mut files: Vec<Result<PathBuf, GlobError>> = vec![];
@@ -78,7 +116,9 @@ fn main() -> Result<()> {
                 Some(&comments),
             );
 
+            // TODO: get_parser
             let mut parser = Parser::new_from(lexer);
+
             let module = match parser.parse_module() {
                 Ok(m) => m,
                 Err(e) => {
@@ -100,9 +140,16 @@ fn main() -> Result<()> {
         // Group entries by target (e.g., trivacafe, martech)
         let mut grouped_entries: HashMap<String, Vec<ast::collector::WhitelabelEntry>> =
             HashMap::new();
+        let mut rename_map: HashMap<String, String> = HashMap::new();
         for entry in &collector.entries {
             if !file_name_only {
-                println!("\t👀 found {} @{}", entry.symbol, entry.import_path);
+                println!(
+                    "\t👀 ({}) found {} @{}",
+                    // TODO: default to default_target from here
+                    entry.target.as_ref().unwrap_or(&cfg.default_target),
+                    entry.symbol,
+                    entry.import_path
+                );
             }
 
             let pb = PathBuf::from(&entry.import_path);
@@ -121,6 +168,20 @@ fn main() -> Result<()> {
                 symbol: entry.symbol.clone(),
                 import_path,
             };
+
+            if let Some(prev_key) = existing_whitelabel_scanner.symbol_to_key.get(&entry.symbol) {
+                if prev_key != &entry.key
+                    && (entry.target == None || entry.target == Some(cfg.default_target.clone()))
+                {
+                    if !file_name_only {
+                        println!(
+                            "\t⚠️ Detected renamed directive: '{}' -> '{}'",
+                            prev_key, entry.key
+                        );
+                    }
+                    rename_map.insert(prev_key.clone(), entry.key.clone());
+                }
+            }
 
             grouped_entries
                 .entry(
@@ -178,8 +239,8 @@ fn main() -> Result<()> {
             global_symbols.insert(entry.symbol.clone(), entry.key.clone());
         }
 
-        for entry in files {
-            let path = entry?;
+        for entry in &files {
+            let path = entry.as_ref().unwrap();
             if path.to_string_lossy().contains(cfg.output_dir.as_str()) {
                 continue;
             }
@@ -241,6 +302,13 @@ fn main() -> Result<()> {
                     println!("✍️  Rewrote references in {}", path.display());
                 }
             }
+        }
+
+        if !rename_map.is_empty() {
+            // TODO: make others `module` as well.
+            let renamed_files =
+                module::rename::rename_whitelabel(&files, &cm, &rename_map, !file_name_only);
+            modified_files.extend(renamed_files);
         }
 
         if file_name_only {
