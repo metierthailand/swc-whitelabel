@@ -1,6 +1,6 @@
 use crate::collector;
 
-pub fn generate(entries: &Vec<&collector::WhitelabelEntry>) -> String {
+pub fn generate(entries: &Vec<collector::WhitelabelEntry>) -> String {
     let mut output = String::new();
     output.push_str("// AUTO-GENERATED: DO NOT EDIT\n\n");
 

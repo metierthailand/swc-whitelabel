@@ -12,13 +12,13 @@ use swc_core::{
 
 #[derive(Clone)]
 struct WhitelabelDirective {
-    targets: Vec<String>, // <-- Changed to a Vec to hold multiple!
+    targets: Vec<Option<String>>,
     key: Option<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct WhitelabelEntry {
-    pub target: String,
+    pub target: Option<String>,
     pub key: String,
     pub symbol: String,
     pub import_path: String,
@@ -27,24 +27,15 @@ pub struct WhitelabelEntry {
 pub struct WhitelabelCollector<'a> {
     source_map: &'a Lrc<SourceMap>,
     comments: &'a SingleThreadedComments,
-    file_path: String,
-    default_target: String,
     pub entries: Vec<WhitelabelEntry>,
     pub errors: Vec<String>,
 }
 
 impl<'a> WhitelabelCollector<'a> {
-    pub fn new(
-        source_map: &'a Lrc<SourceMap>,
-        comments: &'a SingleThreadedComments,
-        file_path: String,
-        default_target: String,
-    ) -> Self {
+    pub fn new(source_map: &'a Lrc<SourceMap>, comments: &'a SingleThreadedComments) -> Self {
         Self {
             source_map,
             comments,
-            file_path,
-            default_target,
             entries: vec![],
             errors: vec![],
         }
@@ -67,7 +58,7 @@ impl<'a> WhitelabelCollector<'a> {
                 for part in directive.split(',') {
                     let part = part.trim();
                     if let Some(t) = part.strip_prefix("for=") {
-                        targets.push(t.trim().to_string());
+                        targets.push(Some(t.trim().to_string()));
                     } else if let Some(k) = part.strip_prefix("key=") {
                         key = Some(k.trim().to_string());
                     }
@@ -75,13 +66,20 @@ impl<'a> WhitelabelCollector<'a> {
 
                 // Smart Fallback: If no `for=` is provided, use the default!
                 if targets.is_empty() {
-                    targets.push(self.default_target.clone());
+                    targets.push(None);
                 }
 
                 return Some(WhitelabelDirective { targets, key });
             }
         }
         None
+    }
+
+    /// Dynamically extracts the physical path, import path, and line number from the AST Span
+    fn get_filename(&self, span: swc_core::common::Span) -> String {
+        let loc = self.source_map.lookup_char_pos(span.lo);
+
+        loc.file.name.to_string()
     }
 }
 
@@ -104,7 +102,7 @@ impl<'a> Visit for WhitelabelCollector<'a> {
                                     target,
                                     key: final_key.clone(),
                                     symbol: symbol.clone(),
-                                    import_path: self.file_path.clone(),
+                                    import_path: self.get_filename(export.span),
                                 });
                             }
                         }
@@ -119,7 +117,7 @@ impl<'a> Visit for WhitelabelCollector<'a> {
                             target,
                             key: final_key.clone(),
                             symbol: symbol.clone(),
-                            import_path: self.file_path.clone(),
+                            import_path: self.get_filename(export.span),
                         });
                     }
                 }
@@ -127,7 +125,8 @@ impl<'a> Visit for WhitelabelCollector<'a> {
                     let loc = self.source_map.lookup_char_pos(export.span.lo);
                     self.errors.push(format!(
                         "Unsupported export declaration for whitelabel {} @{}",
-                        self.file_path, loc.line
+                        loc.file.name.to_string(),
+                        loc.line
                     ))
                 }
             }
@@ -141,7 +140,7 @@ impl<'a> Visit for WhitelabelCollector<'a> {
             self.errors.push(format!(
                 "File {} contains a whitelabel directive on a named export block. \
                 This is not supported in v1. Use direct inline exports.",
-                self.file_path
+                self.get_filename(export.span)
             ));
         }
         export.visit_children_with(self);

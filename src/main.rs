@@ -29,7 +29,7 @@ fn main() -> Result<()> {
     let args: Vec<String> = std::env::args().collect();
     let file_name_only = args.iter().any(|arg| arg == "--file-name-only");
 
-    // 2. A central registry of every file we write to disk
+    //  A central registry of every file we write to disk
     let mut modified_files: Vec<String> = Vec::new();
 
     let cm: Lrc<SourceMap> = Default::default();
@@ -42,11 +42,9 @@ fn main() -> Result<()> {
     };
 
     GLOBALS.set(&globals, || {
-        let mut all_entries: Vec<collector::WhitelabelEntry> = vec![];
-        let mut has_errors = false;
         let mut files: Vec<Result<PathBuf, GlobError>> = vec![];
 
-        for pattern in cfg.patterns {
+        for pattern in &cfg.patterns {
             let Ok(paths) = glob(format!("{}{}", cfg.src, pattern).as_str()) else {
                 panic!("Failed to load {}", pattern)
             };
@@ -54,6 +52,10 @@ fn main() -> Result<()> {
                 files.push(p);
             }
         }
+
+        let comments = SingleThreadedComments::default();
+
+        let mut collector = collector::WhitelabelCollector::new(&cm, &comments);
 
         // Scan for TSX files
         for entry in &files {
@@ -65,11 +67,11 @@ fn main() -> Result<()> {
             }
 
             let fm = cm.load_file(&path)?;
-            let comments = SingleThreadedComments::default();
 
             let lexer = Lexer::new(
                 Syntax::Typescript(TsSyntax {
                     tsx: true,
+                    no_early_errors: true,
                     ..Default::default()
                 }),
                 Default::default(),
@@ -86,47 +88,50 @@ fn main() -> Result<()> {
                 }
             };
 
-            // Format import path (e.g., "src/components/branding.tsx" -> "../components/branding")
-            let import_path = format!(
-                "../{}",
-                path.with_extension("")
-                    .strip_prefix(&cfg.src)
-                    .unwrap_or(&path)
-                    .display()
-            );
-
-            let mut collector = collector::WhitelabelCollector::new(
-                &cm,
-                &comments,
-                import_path,
-                cfg.default_target.clone(),
-            );
             module.visit_with(&mut collector);
-
-            if !collector.errors.is_empty() {
-                for err in collector.errors {
-                    eprintln!("❌ Error in {}: {}", path.display(), err);
-                }
-                has_errors = true;
-            }
-
-            all_entries.extend(collector.entries);
         }
 
-        if has_errors {
+        if !collector.errors.is_empty() {
+            for err in collector.errors {
+                eprintln!("❌ Error: {}", err);
+            }
             anyhow::bail!("Whitelabel extraction failed due to authoring errors.");
         }
 
         // Group entries by target (e.g., trivacafe, martech)
-        let mut grouped_entries: HashMap<String, Vec<&collector::WhitelabelEntry>> = HashMap::new();
-        for entry in &all_entries {
+        let mut grouped_entries: HashMap<String, Vec<collector::WhitelabelEntry>> = HashMap::new();
+        for entry in &collector.entries {
             if !file_name_only {
                 println!("\t👀 found {} @{}", entry.symbol, entry.import_path);
             }
+
+            let pb = PathBuf::from(&entry.import_path);
+
+            let import_path = format!(
+                "../{}",
+                pb.with_extension("")
+                    .strip_prefix(&cfg.src)
+                    .unwrap_or(&pb)
+                    .display()
+            );
+
+            let rewritten_entry = collector::WhitelabelEntry {
+                target: entry.target.clone(),
+                key: entry.key.clone(),
+                symbol: entry.symbol.clone(),
+                import_path,
+            };
+
             grouped_entries
-                .entry(entry.target.clone())
+                .entry(
+                    entry
+                        .target
+                        .as_ref()
+                        .unwrap_or(&cfg.default_target)
+                        .to_owned(),
+                )
                 .or_default()
-                .push(entry);
+                .push(rewritten_entry);
         }
 
         let output_dir = format!("{}{}", cfg.src, cfg.output_dir);
@@ -136,7 +141,7 @@ fn main() -> Result<()> {
         let mut index_configs = String::new();
 
         for (target, entries) in &grouped_entries {
-            let output = generator::wl::generate(&entries);
+            let output = generator::wl::generate(entries);
             let target_path = format!("{}/{}.generated.tsx", output_dir, target);
             fs::write(&target_path, output)?;
 
@@ -160,7 +165,7 @@ fn main() -> Result<()> {
             println!(
                 "✅ Successfully generated whitelabel registry in {}/ with {} total entries.",
                 output_dir,
-                all_entries.len()
+                collector.entries.len()
             );
             println!("🚀 Starting codemod pass to rewrite references...");
         }
@@ -169,7 +174,7 @@ fn main() -> Result<()> {
         // Codemod Pass: Rewrite References Across All Files
         // -----------------------------------------------------------------------------
         let mut global_symbols = HashMap::new();
-        for entry in &all_entries {
+        for entry in &collector.entries {
             global_symbols.insert(entry.symbol.clone(), entry.key.clone());
         }
 
