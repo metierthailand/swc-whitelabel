@@ -1,4 +1,3 @@
-use std::collections::HashSet;
 use swc_core::common::Span;
 use swc_core::ecma::{
     ast::*,
