@@ -20,8 +20,7 @@ use swc_core::{
 
 use swc_core::common::{GLOBALS, Globals};
 
-mod codemod;
-mod collector;
+mod ast;
 mod config;
 mod generator;
 
@@ -55,7 +54,7 @@ fn main() -> Result<()> {
 
         let comments = SingleThreadedComments::default();
 
-        let mut collector = collector::WhitelabelCollector::new(&cm, &comments);
+        let mut collector = ast::collector::WhitelabelCollector::new(&cm, &comments);
 
         // Scan for TSX files
         for entry in &files {
@@ -99,7 +98,8 @@ fn main() -> Result<()> {
         }
 
         // Group entries by target (e.g., trivacafe, martech)
-        let mut grouped_entries: HashMap<String, Vec<collector::WhitelabelEntry>> = HashMap::new();
+        let mut grouped_entries: HashMap<String, Vec<ast::collector::WhitelabelEntry>> =
+            HashMap::new();
         for entry in &collector.entries {
             if !file_name_only {
                 println!("\t👀 found {} @{}", entry.symbol, entry.import_path);
@@ -115,7 +115,7 @@ fn main() -> Result<()> {
                     .display()
             );
 
-            let rewritten_entry = collector::WhitelabelEntry {
+            let rewritten_entry = ast::collector::WhitelabelEntry {
                 target: entry.target.clone(),
                 key: entry.key.clone(),
                 symbol: entry.symbol.clone(),
@@ -207,7 +207,7 @@ fn main() -> Result<()> {
             program.visit_mut_with(&mut resolver(unresolved_mark, top_level_mark, false));
 
             use swc_core::ecma::visit::VisitWith;
-            let mut scanner = codemod::SymbolScanner {
+            let mut scanner = ast::codemod::SymbolScanner {
                 global_symbols: global_symbols.clone(),
                 target_ids: HashMap::new(),
             };
@@ -217,7 +217,7 @@ fn main() -> Result<()> {
                 continue;
             }
 
-            let mut rewriter = codemod::WhitelabelRewriter {
+            let mut rewriter = ast::codemod::WhitelabelRewriter {
                 target_ids: scanner.target_ids,
                 has_modified: false,
             };

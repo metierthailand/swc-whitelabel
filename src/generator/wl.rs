@@ -1,4 +1,4 @@
-use crate::collector;
+use crate::ast::collector;
 
 pub fn generate(entries: &Vec<collector::WhitelabelEntry>) -> String {
     let mut output = String::new();
