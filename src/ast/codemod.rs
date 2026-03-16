@@ -103,7 +103,22 @@ impl VisitMut for WhitelabelRewriter {
                     with: None,
                     phase: Default::default(),
                 }));
-                module.body.insert(0, import_decl);
+
+                // Safely skip Next.js directives like 'use client' or 'use strict'
+                let mut insert_idx = 0;
+                for item in &module.body {
+                    if let ModuleItem::Stmt(Stmt::Expr(expr_stmt)) = item {
+                        if let Expr::Lit(Lit::Str(s)) = &*expr_stmt.expr {
+                            if s.value.starts_with("use ") {
+                                insert_idx += 1;
+                                continue;
+                            }
+                        }
+                    }
+                    break;
+                }
+
+                module.body.insert(insert_idx, import_decl);
             }
         }
     }

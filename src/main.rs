@@ -202,7 +202,7 @@ fn main() -> Result<()> {
         let mut index_configs = String::new();
 
         for (target, entries) in &grouped_entries {
-            let output = generator::wl::generate(entries);
+            let output = generator::wl::generate(entries, *target == cfg.default_target);
             let target_path = format!("{}/{}.generated.tsx", output_dir, target);
             fs::write(&target_path, output)?;
 
