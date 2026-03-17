@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
-use swc_core::common::Spanned;
 use swc_core::common::{DUMMY_SP, SourceMap, sync::Lrc};
 use swc_core::ecma::{
     ast::*,
@@ -98,8 +97,6 @@ impl VisitMut for WhitelabelRewriter {
                     .name
                     .to_string()
                     .into();
-
-                println!("{} vs. {}", current_filename.display(), &config.output_dir);
 
                 let import_decl = ModuleItem::ModuleDecl(ModuleDecl::Import(ImportDecl {
                     span: DUMMY_SP,
