@@ -1,4 +1,4 @@
-use crate::config::config;
+use crate::config::config::{self, WhitelabelConfig};
 use pathdiff::diff_paths;
 use std::path::Path;
 
@@ -10,6 +10,20 @@ where
     if is_allowed {
         f()
     };
+}
+
+pub fn create_reporter<F>(pred: F) -> impl Fn(Box<dyn FnOnce()>) -> ()
+where
+    F: FnOnce(&WhitelabelConfig) -> bool,
+{
+    let cfg = config::get();
+    let is_allowed = pred(cfg);
+
+    move |f| {
+        if is_allowed {
+            f()
+        }
+    }
 }
 
 /// Computes a JS-compatible relative import path

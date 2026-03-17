@@ -1,1 +1,2 @@
-pub mod rename;
+pub mod codemod;
+pub mod rename_whitelabel;

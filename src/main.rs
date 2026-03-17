@@ -4,17 +4,14 @@ use std::fs;
 use std::{collections::HashMap, path::PathBuf};
 use swc_core::{
     common::{
-        Mark, SourceMap,
+        SourceMap,
         comments::SingleThreadedComments,
         errors::{ColorConfig, Handler},
         sync::Lrc,
     },
     ecma::{
-        ast::*,
-        codegen::{Emitter, text_writer::JsWriter},
         parser::{Parser, StringInput, Syntax, TsSyntax, lexer::Lexer},
-        transforms::base::resolver,
-        visit::{VisitMutWith, VisitWith},
+        visit::VisitWith,
     },
 };
 
@@ -27,8 +24,7 @@ mod module;
 mod util;
 
 use crate::ast::whitelabel::WhitelabelScanner;
-use crate::config::tsconfig;
-use crate::util::report;
+use crate::util::{create_reporter, report};
 
 fn main() -> Result<()> {
     //  A central registry of every file we write to disk
@@ -44,17 +40,10 @@ fn main() -> Result<()> {
     };
 
     let cfg = config::config::get();
-
-    let ts_cfg = match &cfg.tsconfig {
-        Some(file) => match tsconfig::load(file.to_string()) {
-            Ok(content) => Some(content),
-            Err(_) => None,
-        },
-        None => None,
-    };
+    let report_modified_files = create_reporter(|c| c.output_file_name_only);
 
     // 1. Determine the path to the existing generated file (e.g., `app/whitelabel/triva.generated.tsx`)
-    let existing_default_whitelabel = std::path::PathBuf::from(format!(
+    let existing_default_whitelabel = PathBuf::from(format!(
         "{}{}/{}.generated.tsx",
         cfg.src, cfg.output_dir, cfg.default_target
     ));
@@ -226,10 +215,30 @@ fn main() -> Result<()> {
         let target_path = format!("{}/index.ts", output_dir);
         fs::write(
             &target_path,
-            generator::index::generate(index_exports, index_configs, cfg.default_target.clone()),
+            generator::index::generate(
+                grouped_entries.iter().map(|(target, _)| target).collect(),
+                cfg.default_target.clone(),
+            ),
         )?;
 
         modified_files.push(target_path);
+
+        let determiner = PathBuf::from(format!("{}/determine-whitelabel.ts", output_dir));
+
+        if determiner.exists() {
+            report(|| {
+                println!(
+                    "🙈 Detected {}, skipped code generation.",
+                    determiner.display()
+                );
+            });
+        } else {
+            fs::write(
+                determiner,
+                generator::determines_whitelabel::generate(cfg.default_target.clone()),
+            )?;
+            modified_files.push(format!("{}/determine-whitelabel.ts", output_dir));
+        }
 
         report(|| {
             println!(
@@ -243,81 +252,13 @@ fn main() -> Result<()> {
         // -----------------------------------------------------------------------------
         // Codemod Pass: Rewrite References Across All Files
         // -----------------------------------------------------------------------------
-        let mut global_symbols = HashMap::new();
-        for entry in &collector.entries {
-            global_symbols.insert(entry.symbol.clone(), entry.clone());
-        }
+        let codemod_modified_files = module::codemod::exec(&cm, &files, collector)?;
 
-        for entry in &files {
-            let path = entry.as_ref().unwrap();
-            if path.to_string_lossy().contains(cfg.output_dir.as_str()) {
-                continue;
-            }
-
-            let fm = cm.load_file(&path)?;
-            let comments = SingleThreadedComments::default();
-            let lexer = Lexer::new(
-                Syntax::Typescript(TsSyntax {
-                    tsx: true,
-                    ..Default::default()
-                }),
-                Default::default(),
-                StringInput::from(&*fm),
-                Some(&comments),
-            );
-            let mut parser = Parser::new_from(lexer);
-            let mut program = match parser.parse_program() {
-                Ok(p) => p,
-                Err(_) => continue,
-            };
-
-            let unresolved_mark = Mark::new();
-            let top_level_mark = Mark::new();
-
-            program.visit_mut_with(&mut resolver(unresolved_mark, top_level_mark, false));
-
-            use swc_core::ecma::visit::VisitWith;
-            let mut scanner = ast::scanner::SymbolScanner::new(
-                global_symbols.clone(),
-                cm.clone(),
-                ts_cfg.clone().unwrap().compiler_options.paths,
-            );
-            program.visit_with(&mut scanner);
-
-            if scanner.target_ids.is_empty() {
-                continue;
-            }
-
-            let mut rewriter = ast::rewriter::WhitelabelRewriter {
-                source_map: cm.clone(),
-                target_ids: scanner.target_ids,
-                has_modified: false,
-            };
-            program.visit_mut_with(&mut rewriter);
-
-            if rewriter.has_modified {
-                let mut buf = vec![];
-                let mut emitter = Emitter {
-                    cfg: swc_core::ecma::codegen::Config::default()
-                        .with_target(EsVersion::Es2022)
-                        .with_omit_last_semi(true),
-                    cm: cm.clone(),
-                    comments: Some(&comments),
-                    wr: JsWriter::new(cm.clone(), "\n", &mut buf, None),
-                };
-                emitter.emit_program(&program)?;
-                fs::write(&path, String::from_utf8(buf)?)?;
-                modified_files.push(path.to_string_lossy().to_string());
-
-                report(|| {
-                    println!("✅  Rewrote references in {}", path.display());
-                });
-            }
-        }
+        modified_files.extend(codemod_modified_files);
 
         if !rename_map.is_empty() {
             // TODO: make others `module` as well.
-            let renamed_files = module::rename::rename_whitelabel(&files, &cm, &rename_map);
+            let renamed_files = module::rename_whitelabel::exec(&files, &cm, &rename_map);
             modified_files.extend(renamed_files);
         }
 
@@ -326,12 +267,12 @@ fn main() -> Result<()> {
             println!("🧙🏾‍♂️ Done! Modified {} files.", modified_files.len());
         });
 
-        if cfg.output_file_name_only {
+        report_modified_files(Box::new(|| {
             // Print ONLY the file paths, one per line, so `xargs` can read it perfectly
             for file in modified_files {
                 println!("{}", file);
             }
-        }
+        }));
 
         Ok(())
     })

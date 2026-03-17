@@ -19,7 +19,7 @@ use swc_core::{
 
 use crate::ast;
 
-pub fn rename_whitelabel(
+pub fn exec(
     files: &Vec<Result<PathBuf, GlobError>>,
     cm: &Lrc<SourceMap>,
     rename_map: &HashMap<String, String>,
