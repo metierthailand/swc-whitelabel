@@ -9,7 +9,6 @@ use swc_core::ecma::{
 };
 
 use crate::ast::collector::WhitelabelEntry;
-use crate::config;
 use crate::util::report;
 
 // Scans the file for imports or local declarations that match known whitelabel symbols

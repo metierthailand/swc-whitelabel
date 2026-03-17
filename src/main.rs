@@ -1,7 +1,7 @@
 use anyhow::Result;
 use glob::{GlobError, glob};
 use std::{collections::HashMap, path::PathBuf};
-use std::{default, fs};
+use std::fs;
 use swc_core::{
     common::{
         Mark, SourceMap,
