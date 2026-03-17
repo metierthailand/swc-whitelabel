@@ -1,6 +1,6 @@
 use swc_core::{
     common::{
-        SourceMap,
+        SourceMap, SourceMapper, Spanned,
         comments::{Comments, SingleThreadedComments},
         sync::Lrc,
     },
@@ -22,6 +22,7 @@ pub struct WhitelabelEntry {
     pub key: String,
     pub symbol: String,
     pub import_path: String,
+    pub _experiment_remark: String,
 }
 
 pub struct WhitelabelCollector<'a> {
@@ -103,6 +104,10 @@ impl<'a> Visit for WhitelabelCollector<'a> {
                                     key: final_key.clone(),
                                     symbol: symbol.clone(),
                                     import_path: self.get_filename(export.span),
+                                    _experiment_remark: self
+                                        .source_map
+                                        .span_to_snippet(decl.init.span())
+                                        .unwrap_or_default(),
                                 });
                             }
                         }
@@ -118,6 +123,10 @@ impl<'a> Visit for WhitelabelCollector<'a> {
                             key: final_key.clone(),
                             symbol: symbol.clone(),
                             import_path: self.get_filename(export.span),
+                            _experiment_remark: self
+                                .source_map
+                                .span_to_snippet(fn_decl.function.span)
+                                .unwrap_or_default(),
                         });
                     }
                 }

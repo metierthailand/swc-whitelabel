@@ -156,9 +156,8 @@ fn main() -> Result<()> {
 
             let rewritten_entry = ast::collector::WhitelabelEntry {
                 target: Some(entry.target.clone().unwrap_or(cfg.default_target.clone())),
-                key: entry.key.clone(),
-                symbol: entry.symbol.clone(),
                 import_path,
+                ..(entry.clone())
             };
 
             if let Some(prev_key) = existing_whitelabel_scanner.symbol_to_key.get(&entry.symbol) {

@@ -1,4 +1,31 @@
-use crate::ast::collector;
+use crate::ast::collector::{self, WhitelabelEntry};
+
+fn format_doc(entry: &WhitelabelEntry) -> String {
+    format!(
+        r#"/**
+* ### 🏷️ Tenant: `{}`
+*
+* **from `{}`**
+*
+* Go to {{@link {} | implementation}}.
+* @default
+* ```tsx
+{}
+* ```
+* 
+*/
+"#,
+        entry.target.clone().unwrap_or_default(),
+        entry.import_path,
+        entry.symbol,
+        entry
+            ._experiment_remark
+            .lines()
+            .map(|line| format!("* {}", line))
+            .collect::<Vec<_>>()
+            .join("\n"),
+    )
+}
 
 pub fn generate(entries: &Vec<collector::WhitelabelEntry>, is_default: bool) -> String {
     let mut output = String::new();
@@ -20,6 +47,7 @@ pub fn generate(entries: &Vec<collector::WhitelabelEntry>, is_default: bool) -> 
 
     output.push_str("\nconst whitelabel = {\n");
     for entry in &sorted_entries {
+        output.push_str(&format_doc(entry));
         if entry.symbol == entry.key {
             output.push_str(&format!("  {},\n", entry.symbol));
         } else {
