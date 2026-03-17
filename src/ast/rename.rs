@@ -4,10 +4,11 @@ use swc_core::ecma::{
     visit::{VisitMut, VisitMutWith, noop_visit_mut_type},
 };
 
+use crate::util::report;
+
 pub struct WhitelabelRename<'a> {
     pub rename_map: &'a HashMap<String, String>,
     pub has_modified: bool,
-    pub should_print: bool,
 }
 
 impl<'a> VisitMut for WhitelabelRename<'a> {
@@ -32,12 +33,12 @@ impl<'a> VisitMut for WhitelabelRename<'a> {
 
                         self.has_modified = true;
 
-                        if self.should_print {
+                        report(|| {
                             println!(
                                 "✍️  Renamed whitelabel property: {} -> {}",
                                 current_key, new_key
                             );
-                        }
+                        })
                     }
                 }
             }

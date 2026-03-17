@@ -23,7 +23,6 @@ pub fn rename_whitelabel(
     files: &Vec<Result<PathBuf, GlobError>>,
     cm: &Lrc<SourceMap>,
     rename_map: &HashMap<String, String>,
-    should_print: bool,
 ) -> Vec<String> {
     let comments = SingleThreadedComments::default();
 
@@ -55,7 +54,6 @@ pub fn rename_whitelabel(
         let mut wl_rename = ast::rename::WhitelabelRename {
             rename_map,
             has_modified: false,
-            should_print,
         };
         program.visit_mut_with(&mut wl_rename);
 

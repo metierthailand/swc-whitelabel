@@ -1,7 +1,7 @@
 use anyhow::Result;
 use glob::{GlobError, glob};
-use std::fs;
 use std::{collections::HashMap, path::PathBuf};
+use std::{default, fs};
 use swc_core::{
     common::{
         Mark, SourceMap,
@@ -20,18 +20,17 @@ use swc_core::{
 
 use swc_core::common::{GLOBALS, Globals};
 
-use crate::ast::whitelabel::WhitelabelScanner;
-
 mod ast;
 mod config;
 mod generator;
 mod module;
+mod util;
+
+use crate::ast::whitelabel::WhitelabelScanner;
+use crate::config::tsconfig;
+use crate::util::report;
 
 fn main() -> Result<()> {
-    let args: Vec<String> = std::env::args().collect();
-    // TODO: printer
-    let file_name_only = args.iter().any(|arg| arg == "--file-name-only");
-
     //  A central registry of every file we write to disk
     let mut modified_files: Vec<String> = Vec::new();
 
@@ -40,8 +39,18 @@ fn main() -> Result<()> {
 
     let globals = Globals::new();
 
-    let Ok(cfg) = config::load_config() else {
-        panic!("Failed to load config")
+    let Ok(_) = config::config::init() else {
+        panic!("Failed to load config");
+    };
+
+    let cfg = config::config::get();
+
+    let ts_cfg = match &cfg.tsconfig {
+        Some(file) => match tsconfig::load(file.to_string()) {
+            Ok(content) => Some(content),
+            Err(_) => None,
+        },
+        None => None,
     };
 
     // 1. Determine the path to the existing generated file (e.g., `app/whitelabel/triva.generated.tsx`)
@@ -53,9 +62,9 @@ fn main() -> Result<()> {
 
     // 2. Only run the diffing engine if the old generated file actually exists!
     if existing_default_whitelabel.exists() {
-        if !file_name_only {
+        report(|| {
             println!("🔍 Found previous generated registry. Scanning for existing keys...");
-        }
+        });
 
         // Parse the old file into an AST (using your existing SWC parser setup)
         if let Ok(fm) = cm.load_file(&existing_default_whitelabel) {
@@ -142,15 +151,15 @@ fn main() -> Result<()> {
             HashMap::new();
         let mut rename_map: HashMap<String, String> = HashMap::new();
         for entry in &collector.entries {
-            if !file_name_only {
+            report(|| {
                 println!(
-                    "\t👀 ({}) found {} @{}",
+                    "\t📝 ({}) found {} @{}",
                     // TODO: default to default_target from here
                     entry.target.as_ref().unwrap_or(&cfg.default_target),
                     entry.symbol,
                     entry.import_path
                 );
-            }
+            });
 
             let pb = PathBuf::from(&entry.import_path);
 
@@ -173,12 +182,12 @@ fn main() -> Result<()> {
                 if prev_key != &entry.key
                     && (entry.target == None || entry.target == Some(cfg.default_target.clone()))
                 {
-                    if !file_name_only {
+                    report(|| {
                         println!(
                             "\t⚠️ Detected renamed directive: '{}' -> '{}'",
                             prev_key, entry.key
                         );
-                    }
+                    });
                     rename_map.insert(prev_key.clone(), entry.key.clone());
                 }
             }
@@ -217,26 +226,26 @@ fn main() -> Result<()> {
         let target_path = format!("{}/index.ts", output_dir);
         fs::write(
             &target_path,
-            generator::index::generate(index_exports, index_configs, cfg.default_target),
+            generator::index::generate(index_exports, index_configs, cfg.default_target.clone()),
         )?;
 
         modified_files.push(target_path);
 
-        if !file_name_only {
+        report(|| {
             println!(
                 "✅ Successfully generated whitelabel registry in {}/ with {} total entries.",
                 output_dir,
                 collector.entries.len()
             );
-            println!("🚀 Starting codemod pass to rewrite references...");
-        }
+            println!("🪄 Starting codemod pass to rewrite references...");
+        });
 
         // -----------------------------------------------------------------------------
         // Codemod Pass: Rewrite References Across All Files
         // -----------------------------------------------------------------------------
         let mut global_symbols = HashMap::new();
         for entry in &collector.entries {
-            global_symbols.insert(entry.symbol.clone(), entry.key.clone());
+            global_symbols.insert(entry.symbol.clone(), entry.clone());
         }
 
         for entry in &files {
@@ -268,10 +277,11 @@ fn main() -> Result<()> {
             program.visit_mut_with(&mut resolver(unresolved_mark, top_level_mark, false));
 
             use swc_core::ecma::visit::VisitWith;
-            let mut scanner = ast::codemod::SymbolScanner {
-                global_symbols: global_symbols.clone(),
-                target_ids: HashMap::new(),
-            };
+            let mut scanner = ast::codemod::SymbolScanner::new(
+                global_symbols.clone(),
+                cm.clone(),
+                ts_cfg.clone().unwrap().compiler_options.paths,
+            );
             program.visit_with(&mut scanner);
 
             if scanner.target_ids.is_empty() {
@@ -298,28 +308,30 @@ fn main() -> Result<()> {
                 fs::write(&path, String::from_utf8(buf)?)?;
                 modified_files.push(path.to_string_lossy().to_string());
 
-                if !file_name_only {
-                    println!("✍️  Rewrote references in {}", path.display());
-                }
+                report(|| {
+                    println!("✅  Rewrote references in {}", path.display());
+                });
             }
         }
 
         if !rename_map.is_empty() {
             // TODO: make others `module` as well.
-            let renamed_files =
-                module::rename::rename_whitelabel(&files, &cm, &rename_map, !file_name_only);
+            let renamed_files = module::rename::rename_whitelabel(&files, &cm, &rename_map);
             modified_files.extend(renamed_files);
         }
 
-        if file_name_only {
+        report(|| {
+            // Friendly summary for human execution
+            println!("🧙🏾‍♂️ Done! Modified {} files.", modified_files.len());
+        });
+
+        if cfg.output_file_name_only {
             // Print ONLY the file paths, one per line, so `xargs` can read it perfectly
             for file in modified_files {
                 println!("{}", file);
             }
-        } else {
-            // Friendly summary for human execution
-            println!("🎉 Done! Modified {} files.", modified_files.len());
         }
+
         Ok(())
     })
 }
