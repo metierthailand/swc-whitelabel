@@ -169,7 +169,7 @@ impl Visit for SymbolScanner {
                 {
                     report(|| {
                         println!(
-                            "📡 (⬇️) {}@{}",
+                            "\t 📡 (📦) {} @ {}",
                             entry.key,
                             self.current_file_name.as_ref().unwrap().to_string()
                         )
@@ -190,7 +190,7 @@ impl Visit for SymbolScanner {
             {
                 report(|| {
                     println!(
-                        "📡 (🔁) {}@{}",
+                        "\t 📡 (🏠) {} @ {}",
                         entry.key,
                         self.current_file_name.as_ref().unwrap().to_string()
                     )

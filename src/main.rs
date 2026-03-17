@@ -88,6 +88,10 @@ fn main() -> Result<()> {
             }
         }
 
+        report(|| {
+            println!("🔍 Start collecting whitelabel keys ...");
+        });
+
         let comments = SingleThreadedComments::default();
 
         let mut collector = ast::collector::WhitelabelCollector::new(&cm, &comments);
@@ -140,16 +144,6 @@ fn main() -> Result<()> {
             HashMap::new();
         let mut rename_map: HashMap<String, String> = HashMap::new();
         for entry in &collector.entries {
-            report(|| {
-                println!(
-                    "\t📝 ({}) found {} @{}",
-                    // TODO: default to default_target from here
-                    entry.target.as_ref().unwrap_or(&cfg.default_target),
-                    entry.symbol,
-                    entry.import_path
-                );
-            });
-
             let pb = PathBuf::from(&entry.import_path);
 
             let import_path = format!(
@@ -161,54 +155,54 @@ fn main() -> Result<()> {
             );
 
             let rewritten_entry = ast::collector::WhitelabelEntry {
-                target: entry.target.clone(),
+                target: Some(entry.target.clone().unwrap_or(cfg.default_target.clone())),
                 key: entry.key.clone(),
                 symbol: entry.symbol.clone(),
                 import_path,
             };
 
             if let Some(prev_key) = existing_whitelabel_scanner.symbol_to_key.get(&entry.symbol) {
-                if prev_key != &entry.key
-                    && (entry.target == None || entry.target == Some(cfg.default_target.clone()))
-                {
+                if prev_key != &entry.key && entry.target == Some(cfg.default_target.clone()) {
                     report(|| {
                         println!(
-                            "\t⚠️ Detected renamed directive: '{}' -> '{}'",
+                            "\t ⚠️ Detected renamed directive: '{}' -> '{}'",
                             prev_key, entry.key
                         );
                     });
                     rename_map.insert(prev_key.clone(), entry.key.clone());
                 }
             }
+            report(|| {
+                println!(
+                    "\t🪡 ({}) found {} @ {}",
+                    rewritten_entry.target.clone().unwrap_or_default(),
+                    entry.symbol,
+                    entry.import_path
+                );
+            });
 
             grouped_entries
-                .entry(
-                    entry
-                        .target
-                        .as_ref()
-                        .unwrap_or(&cfg.default_target)
-                        .to_owned(),
-                )
+                .entry(rewritten_entry.target.clone().unwrap())
                 .or_default()
                 .push(rewritten_entry);
         }
 
+        report(|| {
+            println!("🏗️ Starting whitelabel code generation...",);
+        });
+
         let output_dir = format!("{}{}", cfg.src, cfg.output_dir);
         fs::create_dir_all(&output_dir)?;
 
-        let mut index_exports = String::new();
-        let mut index_configs = String::new();
-
-        for (target, entries) in &grouped_entries {
-            let output = generator::wl::generate(entries, *target == cfg.default_target);
+        for (target, entry) in &grouped_entries {
+            let output = generator::wl::generate(entry, *target == cfg.default_target);
             let target_path = format!("{}/{}.generated.tsx", output_dir, target);
             fs::write(&target_path, output)?;
 
-            index_exports.push_str(&format!(
-                "import {} from \"./{}.generated\";\n",
-                target, target
-            ));
-            index_configs.push_str(&format!("  {},\n", target));
+            report(|| {
+                println!("\t💼 {} ✅", target_path);
+            });
+
             modified_files.push(target_path);
         }
 
@@ -264,7 +258,7 @@ fn main() -> Result<()> {
 
         report(|| {
             // Friendly summary for human execution
-            println!("🧙🏾‍♂️ Done! Modified {} files.", modified_files.len());
+            println!("🧙 Done! Modified {} files.", modified_files.len());
         });
 
         report_modified_files(Box::new(|| {
