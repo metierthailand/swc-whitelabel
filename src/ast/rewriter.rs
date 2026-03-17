@@ -1,16 +1,14 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::{env, fs};
 use swc_core::common::Spanned;
 use swc_core::common::{DUMMY_SP, SourceMap, sync::Lrc};
 use swc_core::ecma::{
     ast::*,
-    visit::{Visit, VisitMut, VisitMutWith, VisitWith, noop_visit_mut_type},
+    visit::{VisitMut, VisitMutWith, noop_visit_mut_type},
 };
 
-use crate::ast::collector::WhitelabelEntry;
 use crate::config::config;
-use crate::util::{self, report};
+use crate::util::{self};
 
 pub struct WhitelabelRewriter {
     pub source_map: Lrc<SourceMap>,

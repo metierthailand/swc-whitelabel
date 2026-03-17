@@ -2,15 +2,14 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::{env, fs};
 use swc_core::common::Spanned;
-use swc_core::common::{DUMMY_SP, SourceMap, sync::Lrc};
+use swc_core::common::{SourceMap, sync::Lrc};
 use swc_core::ecma::{
     ast::*,
-    visit::{Visit, VisitMut, VisitMutWith, VisitWith, noop_visit_mut_type},
+    visit::{Visit, VisitWith},
 };
 
 use crate::ast::collector::WhitelabelEntry;
-use crate::config::config;
-use crate::util::{self, report};
+use crate::util::report;
 
 // Scans the file for imports or local declarations that match known whitelabel symbols
 pub struct SymbolScanner {
