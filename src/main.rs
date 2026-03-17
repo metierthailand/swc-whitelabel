@@ -1,7 +1,7 @@
 use anyhow::Result;
 use glob::{GlobError, glob};
-use std::{collections::HashMap, path::PathBuf};
 use std::fs;
+use std::{collections::HashMap, path::PathBuf};
 use swc_core::{
     common::{
         Mark, SourceMap,
@@ -277,7 +277,7 @@ fn main() -> Result<()> {
             program.visit_mut_with(&mut resolver(unresolved_mark, top_level_mark, false));
 
             use swc_core::ecma::visit::VisitWith;
-            let mut scanner = ast::codemod::SymbolScanner::new(
+            let mut scanner = ast::scanner::SymbolScanner::new(
                 global_symbols.clone(),
                 cm.clone(),
                 ts_cfg.clone().unwrap().compiler_options.paths,
@@ -288,7 +288,8 @@ fn main() -> Result<()> {
                 continue;
             }
 
-            let mut rewriter = ast::codemod::WhitelabelRewriter {
+            let mut rewriter = ast::rewriter::WhitelabelRewriter {
+                source_map: cm.clone(),
                 target_ids: scanner.target_ids,
                 has_modified: false,
             };

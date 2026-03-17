@@ -9,7 +9,8 @@ use swc_core::ecma::{
 };
 
 use crate::ast::collector::WhitelabelEntry;
-use crate::util::report;
+use crate::config::config;
+use crate::util::{self, report};
 
 // Scans the file for imports or local declarations that match known whitelabel symbols
 pub struct SymbolScanner {
@@ -148,8 +149,24 @@ impl Visit for SymbolScanner {
                 // 3. MATHEMATICAL CERTAINTY: Does the absolute resolved path exactly match
                 // the file where the symbol was originally collected?
                 if let Some(entry) = self.global_symbols.get(&imported_name)
-                    && fs::canonicalize(&resolved_path).unwrap()
-                        == fs::canonicalize(&entry.import_path).unwrap()
+                    && match fs::canonicalize(&resolved_path) {
+                        Ok(abs_resolved_path) => {
+                            let match_exact = match fs::canonicalize(&entry.import_path) {
+                                Ok(path) => path == abs_resolved_path,
+                                _ => true,
+                            };
+
+                            let match_parent = match fs::canonicalize(&entry.import_path)
+                                .map(|pb| pb.parent().map(|parent| parent.to_path_buf()))
+                            {
+                                Ok(parent) => parent.unwrap_or_default() == abs_resolved_path,
+                                _ => true,
+                            };
+
+                            match_exact || match_parent
+                        }
+                        _ => false,
+                    }
                 {
                     report(|| {
                         println!(
@@ -183,93 +200,5 @@ impl Visit for SymbolScanner {
             }
         }
         decl.visit_children_with(self);
-    }
-}
-
-pub struct WhitelabelRewriter {
-    pub target_ids: HashMap<Id, String>,
-    pub has_modified: bool,
-}
-
-impl VisitMut for WhitelabelRewriter {
-    noop_visit_mut_type!();
-
-    fn visit_mut_expr(&mut self, expr: &mut Expr) {
-        expr.visit_mut_children_with(self);
-        if let Expr::Ident(ident) = expr {
-            if let Some(wl_key) = self.target_ids.get(&ident.to_id()) {
-                *expr = Expr::Member(MemberExpr {
-                    span: ident.span,
-                    obj: Box::new(Expr::Ident(Ident::new(
-                        "whitelabel".into(),
-                        DUMMY_SP,
-                        Default::default(),
-                    ))),
-                    prop: MemberProp::Ident(IdentName::new(wl_key.clone().into(), DUMMY_SP)),
-                });
-                self.has_modified = true;
-            }
-        }
-    }
-
-    // Handles shorthand properties (e.g., `{ seedData }` -> `{ seedData: whitelabel.seedData }`)
-    fn visit_mut_prop(&mut self, prop: &mut Prop) {
-        prop.visit_mut_children_with(self);
-        if let Prop::Shorthand(ident) = prop {
-            if let Some(wl_key) = self.target_ids.get(&ident.to_id()) {
-                *prop = Prop::KeyValue(KeyValueProp {
-                    key: PropName::Ident(IdentName::new(ident.sym.clone(), DUMMY_SP)),
-                    value: Box::new(Expr::Member(MemberExpr {
-                        span: ident.span,
-                        obj: Box::new(Expr::Ident(Ident::new(
-                            "whitelabel".into(),
-                            DUMMY_SP,
-                            Default::default(),
-                        ))),
-                        prop: MemberProp::Ident(IdentName::new(wl_key.clone().into(), DUMMY_SP)),
-                    })),
-                });
-                self.has_modified = true;
-            }
-        }
-    }
-
-    fn visit_mut_program(&mut self, program: &mut Program) {
-        program.visit_mut_children_with(self);
-        if self.has_modified {
-            if let Program::Module(module) = program {
-                let import_decl = ModuleItem::ModuleDecl(ModuleDecl::Import(ImportDecl {
-                    span: DUMMY_SP,
-                    specifiers: vec![ImportSpecifier::Default(ImportDefaultSpecifier {
-                        span: DUMMY_SP,
-                        local: Ident::new("whitelabel".into(), DUMMY_SP, Default::default()),
-                    })],
-                    src: Box::new(Str {
-                        span: DUMMY_SP,
-                        value: "@/app/whitelabel".into(),
-                        raw: None,
-                    }),
-                    type_only: false,
-                    with: None,
-                    phase: Default::default(),
-                }));
-
-                // Safely skip Next.js directives like 'use client' or 'use strict'
-                let mut insert_idx = 0;
-                for item in &module.body {
-                    if let ModuleItem::Stmt(Stmt::Expr(expr_stmt)) = item {
-                        if let Expr::Lit(Lit::Str(s)) = &*expr_stmt.expr {
-                            if s.value.starts_with("use ") {
-                                insert_idx += 1;
-                                continue;
-                            }
-                        }
-                    }
-                    break;
-                }
-
-                module.body.insert(insert_idx, import_decl);
-            }
-        }
     }
 }
