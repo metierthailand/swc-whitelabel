@@ -11,6 +11,10 @@ serde = "1.0.220" # Pin strictly to the last working version
 serde_json = "1.0.149"
 swc_ecma_utils = "27.0.0"
 pathdiff = "0.2.3"
+testing = "20.0.0"
+insta = {version = "1.46.3", features = ["yaml", "redactions"] }
+tempfile = "3.27.0"
+walkdir = "2.5.0"
 
 [profile.release]
 opt-level = 3        # (Default) All out speed optimization

@@ -1,0 +1,34 @@
+---
+source: tests/collector_test.rs
+expression: collector.entries
+---
+- target: ~
+  key: FN
+  symbol: FN
+  import_path: /Users/intaniger/exploring/wl-extractor/tests/fixtures/collector/accept_src/functions.tsx
+  _experiment_remark: "(a: string) => `Hello! ${a}`"
+- target: wl
+  key: FN2
+  symbol: FN2
+  import_path: /Users/intaniger/exploring/wl-extractor/tests/fixtures/collector/accept_src/functions.tsx
+  _experiment_remark: "(a: string) => `Hello! 2 ${a}`"
+- target: bunny
+  key: FN3
+  symbol: FN3
+  import_path: /Users/intaniger/exploring/wl-extractor/tests/fixtures/collector/accept_src/functions.tsx
+  _experiment_remark: "(a: string) => `Hello! 3 ${a}`"
+- target: bunny
+  key: FN4
+  symbol: FN4
+  import_path: /Users/intaniger/exploring/wl-extractor/tests/fixtures/collector/accept_src/functions.tsx
+  _experiment_remark: "(a: string) => `Hello! 4 ${a}`"
+- target: bunny
+  key: FN
+  symbol: BUNNY_FN
+  import_path: /Users/intaniger/exploring/wl-extractor/tests/fixtures/collector/accept_src/functions.tsx
+  _experiment_remark: "(a: string) => `Bunny hello to ${a}!`"
+- target: ~
+  key: feature_a_FN
+  symbol: FN5
+  import_path: /Users/intaniger/exploring/wl-extractor/tests/fixtures/collector/accept_src/functions.tsx
+  _experiment_remark: "(a: string) => `Bunny hello to ${a}!`"

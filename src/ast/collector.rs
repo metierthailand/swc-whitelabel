@@ -1,3 +1,4 @@
+use serde::Serialize;
 use swc_core::{
     common::{
         SourceMap, SourceMapper, Spanned,
@@ -16,7 +17,7 @@ struct WhitelabelDirective {
     key: Option<String>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct WhitelabelEntry {
     pub target: Option<String>,
     pub key: String,

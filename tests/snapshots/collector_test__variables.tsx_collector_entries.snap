@@ -1,0 +1,34 @@
+---
+source: tests/collector_test.rs
+expression: collector.entries
+---
+- target: ~
+  key: TITLE
+  symbol: TITLE
+  import_path: /Users/intaniger/exploring/wl-extractor/tests/fixtures/collector/accept_src/variables.tsx
+  _experiment_remark: "\"ELTIT\""
+- target: wl
+  key: TITLE_1
+  symbol: TITLE_1
+  import_path: /Users/intaniger/exploring/wl-extractor/tests/fixtures/collector/accept_src/variables.tsx
+  _experiment_remark: "\"1_ELTIT\""
+- target: bunny
+  key: TITLE_2
+  symbol: TITLE_2
+  import_path: /Users/intaniger/exploring/wl-extractor/tests/fixtures/collector/accept_src/variables.tsx
+  _experiment_remark: "\"2_ELTIT\""
+- target: bunny
+  key: TITLE_3
+  symbol: TITLE_3
+  import_path: /Users/intaniger/exploring/wl-extractor/tests/fixtures/collector/accept_src/variables.tsx
+  _experiment_remark: "\"3_ELTIT\""
+- target: bunny
+  key: TITLE
+  symbol: TITLE_4
+  import_path: /Users/intaniger/exploring/wl-extractor/tests/fixtures/collector/accept_src/variables.tsx
+  _experiment_remark: "\"4_ELTIT\""
+- target: ~
+  key: TITLE
+  symbol: TITLE_5
+  import_path: /Users/intaniger/exploring/wl-extractor/tests/fixtures/collector/accept_src/variables.tsx
+  _experiment_remark: "\"5_ELTIT\""
