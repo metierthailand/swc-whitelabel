@@ -32,7 +32,7 @@ fn format_doc(entry: &WhitelabelEntry, current_dir: &PathBuf) -> String {
 * 
 */
 "#,
-        entry.target.clone().unwrap_or_default(),
+        entry.target.as_deref().unwrap_or_default(),
         to_rel_import(&current_dir, entry).to_string_lossy(),
         entry.symbol,
         entry
@@ -44,7 +44,7 @@ fn format_doc(entry: &WhitelabelEntry, current_dir: &PathBuf) -> String {
     )
 }
 
-pub fn generate(entries: &Vec<collector::WhitelabelEntry>, is_default: bool) -> String {
+pub fn generate(entries: &Vec<&collector::WhitelabelEntry>, is_default: bool) -> String {
     let cfg = config::get();
     let mut output = String::new();
     output.push_str(if !is_default {
@@ -53,8 +53,8 @@ pub fn generate(entries: &Vec<collector::WhitelabelEntry>, is_default: bool) -> 
         "// AUTO-GENERATED: DO NOT EDIT\n\n"
     });
 
-    let mut sorted_entries = entries.clone();
-    sorted_entries.sort_by(|a, b| a.key.cmp(&b.key));
+    let mut sorted_entries: Vec<&WhitelabelEntry> = entries.to_vec();
+    sorted_entries.sort_by_key(|e| &e.key);
 
     let mut current_dir = cfg.cwd.clone();
     current_dir.push(&cfg.src);

@@ -29,7 +29,7 @@ impl<'a> VisitMut for WhitelabelRename<'a> {
                     // 3. If this key exists in our rename map, we have a match!
                     if let Some(new_key) = self.rename_map.get(&current_key) {
                         // Surgically overwrite the AST node with the new key
-                        prop_ident.sym = new_key.clone().into();
+                        prop_ident.sym = new_key.as_str().into();
 
                         self.has_modified = true;
 
@@ -57,7 +57,7 @@ impl<'a> VisitMut for WhitelabelRename<'a> {
                 // 3. If this key exists in our rename map, we have a match!
                 if let Some(new_key) = self.rename_map.get(&current_key) {
                     // Surgically overwrite the AST node with the new key
-                    prop_ident.sym = new_key.clone().into();
+                    prop_ident.sym = new_key.as_str().into();
 
                     self.has_modified = true;
 

@@ -143,28 +143,26 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
         }
 
         // Group entries by target (e.g., trivacafe, martech)
-        let mut grouped_entries: HashMap<String, Vec<ast::collector::WhitelabelEntry>> =
+        let mut grouped_entries: HashMap<String, Vec<&ast::collector::WhitelabelEntry>> =
             HashMap::new();
         let mut rename_map: HashMap<String, String> = HashMap::new();
-        for entry in &collector.entries {
+        for entry in &mut collector.entries {
             let pb = PathBuf::from(&entry.import_path);
 
-            let import_path = format!(
-                "{}",
-                pb.with_extension("")
-                    .strip_prefix(&cfg.src)
-                    .unwrap_or(&pb)
-                    .display()
-            );
-
-            let rewritten_entry = ast::collector::WhitelabelEntry {
-                target: Some(entry.target.clone().unwrap_or(cfg.default_target.clone())),
-                import_path,
-                ..(entry.clone())
-            };
+            entry.import_path = pb
+                .with_extension("")
+                .strip_prefix(&cfg.src)
+                .unwrap_or(&pb)
+                .display()
+                .to_string();
+            if entry.target.is_none() {
+                entry.target = Some(cfg.default_target.clone());
+            }
 
             if let Some(prev_key) = existing_whitelabel_scanner.symbol_to_key.get(&entry.symbol) {
-                if prev_key != &entry.key && entry.target == Some(cfg.default_target.clone()) {
+                if prev_key != &entry.key
+                    && entry.target.as_deref() == Some(cfg.default_target.as_str())
+                {
                     report(|| {
                         println!(
                             "\t ⚠️ Detected renamed directive: '{}' -> '{}'",
@@ -177,16 +175,16 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
             report(|| {
                 println!(
                     "\t🪡 ({}) found {} @ {}",
-                    rewritten_entry.target.clone().unwrap_or_default(),
+                    entry.target.as_deref().unwrap_or_default(),
                     entry.symbol,
                     entry.import_path
                 );
             });
 
             grouped_entries
-                .entry(rewritten_entry.target.clone().unwrap())
+                .entry(entry.target.clone().unwrap())
                 .or_default()
-                .push(rewritten_entry);
+                .push(entry);
         }
 
         report(|| {

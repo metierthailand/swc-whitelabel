@@ -89,19 +89,15 @@ impl VisitMut for WhitelabelRewriter {
         node.visit_mut_children_with(self);
         if let JSXElementName::Ident(ident) = &node.name {
             if let Some(wl_key) = self.target_ids.get(&ident.to_id()) {
-                *node = JSXOpeningElement {
-                    name: JSXElementName::JSXMemberExpr(JSXMemberExpr {
-                        span: ident.span,
-                        obj: JSXObject::Ident(Ident::new(
-                            "whitelabel".into(),
-                            DUMMY_SP,
-                            Default::default(),
-                        )),
-                        prop: IdentName::new(wl_key.clone().into(), DUMMY_SP),
-                    }),
-
-                    ..node.clone()
-                };
+                node.name = JSXElementName::JSXMemberExpr(JSXMemberExpr {
+                    span: ident.span,
+                    obj: JSXObject::Ident(Ident::new(
+                        "whitelabel".into(),
+                        DUMMY_SP,
+                        Default::default(),
+                    )),
+                    prop: IdentName::new(wl_key.clone().into(), DUMMY_SP),
+                });
                 self.has_modified = true;
             }
         }

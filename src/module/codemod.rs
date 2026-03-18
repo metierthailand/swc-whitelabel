@@ -30,12 +30,12 @@ pub fn exec(
     let ts_cfg =
         tsconfig::load(cfg.tsconfig.clone().unwrap()).expect("Failed to load tsconfig.json");
 
-    for entry in &collector.entries {
-        if let Some(existing) = global_symbols.get_mut(&entry.symbol) {
-            existing.push(entry.clone());
-        } else {
-            global_symbols.insert(entry.symbol.clone(), vec![entry.clone()]);
-        }
+    // 🎯 IDIOMATIC: Consuming the iterator (Value Move)
+    for entry in collector.entries.into_iter() {
+        global_symbols
+            .entry(entry.symbol.clone())
+            .or_default()
+            .push(entry); // The struct is MOVED, not cloned!
     }
 
     for entry in files {
@@ -67,11 +67,8 @@ pub fn exec(
         program.visit_mut_with(&mut resolver(unresolved_mark, top_level_mark, false));
 
         use swc_core::ecma::visit::VisitWith;
-        let mut scanner = SymbolScanner::new(
-            global_symbols.clone(),
-            cm.clone(),
-            ts_cfg.compiler_options.paths.clone(),
-        );
+        let mut scanner =
+            SymbolScanner::new(&global_symbols, cm.clone(), &ts_cfg.compiler_options.paths);
         program.visit_with(&mut scanner);
 
         if scanner.target_ids.is_empty() {

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
-use std::path::PathBuf;
 use std::fs;
+use std::path::PathBuf;
 use swc_core::common::Spanned;
 use swc_core::common::{SourceMap, sync::Lrc};
 use swc_core::ecma::{
@@ -13,19 +13,19 @@ use crate::config::config;
 use crate::util::report;
 
 // Scans the file for imports or local declarations that match known whitelabel symbols
-pub struct SymbolScanner {
+pub struct SymbolScanner<'a> {
     pub source_map: Lrc<SourceMap>,
-    pub global_symbols: HashMap<String, Vec<WhitelabelEntry>>,
+    pub global_symbols: &'a HashMap<String, Vec<WhitelabelEntry>>,
     pub target_ids: HashMap<Id, String>,
-    pub path_mapping: HashMap<String, Vec<String>>,
+    pub path_mapping: &'a HashMap<String, Vec<String>>,
     current_file_name: Option<Lrc<swc_core::common::FileName>>,
 }
 
-impl SymbolScanner {
+impl<'a> SymbolScanner<'a> {
     pub fn new(
-        global_symbols: HashMap<String, Vec<WhitelabelEntry>>,
+        global_symbols: &'a HashMap<String, Vec<WhitelabelEntry>>,
         source_map: Lrc<SourceMap>,
-        path_mapping: HashMap<String, Vec<String>>,
+        path_mapping: &'a HashMap<String, Vec<String>>,
     ) -> Self {
         Self {
             global_symbols,
@@ -95,7 +95,7 @@ impl SymbolScanner {
 
     fn best_path_mapping_match(&self, import_src: &str) -> Option<(&String, &Vec<String>, usize)> {
         let mut best_match: Option<(&String, &Vec<String>, usize)> = None;
-        for (pattern, mapped_paths) in &self.path_mapping {
+        for (pattern, mapped_paths) in self.path_mapping {
             if let Some(star_idx) = pattern.find('*') {
                 let prefix = &pattern[..star_idx];
                 let suffix = &pattern[star_idx + 1..];
@@ -114,7 +114,7 @@ impl SymbolScanner {
     }
 }
 
-impl Visit for SymbolScanner {
+impl<'a> Visit for SymbolScanner<'a> {
     fn visit_program(&mut self, node: &Program) {
         self.current_file_name = Some(
             self.source_map
@@ -151,7 +151,7 @@ impl Visit for SymbolScanner {
                                 self.current_file_name.as_ref().unwrap().to_string().into(),
                                 import_src,
                             );
-                            &lazy_resolved_path.clone().expect(
+                            lazy_resolved_path.as_ref().expect(
                                 format!("Can't resolve path for {:?}", self.current_file_name)
                                     .as_str(),
                             )
