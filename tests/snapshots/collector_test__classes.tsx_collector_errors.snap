@@ -1,0 +1,6 @@
+---
+source: tests/collector_test.rs
+expression: collector.errors
+---
+- Unsupported export declaration for whitelabel /Users/intaniger/exploring/wl-extractor/tests/fixtures/collector/reject_src/classes.tsx @6
+- Unsupported export declaration for whitelabel /Users/intaniger/exploring/wl-extractor/tests/fixtures/collector/reject_src/classes.tsx @11

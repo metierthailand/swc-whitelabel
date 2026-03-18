@@ -1,6 +1,5 @@
 use std::path::PathBuf;
 
-use glob::{GlobError, glob};
 use swc_core::{
     common::{SourceMap, comments::SingleThreadedComments, sync::Lrc},
     ecma::{

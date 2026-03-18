@@ -31,4 +31,4 @@ expression: collector.entries
   key: feature_a_FN
   symbol: FN5
   import_path: /Users/intaniger/exploring/wl-extractor/tests/fixtures/collector/accept_src/functions.tsx
-  _experiment_remark: "(a: string) => `Bunny hello to ${a}!`"
+  _experiment_remark: () => <div><h1>Hey</h1></div>

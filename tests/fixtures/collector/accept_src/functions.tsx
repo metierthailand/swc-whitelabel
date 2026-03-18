@@ -39,4 +39,4 @@ export const BUNNY_FN = (a: string) => `Bunny hello to ${a}!`;
  */
 
 // whitelabel key=feature_a_FN
-export const FN5 = (a: string) => `Bunny hello to ${a}!`;
+export const FN5 = () => <div><h1>Hey</h1></div>;

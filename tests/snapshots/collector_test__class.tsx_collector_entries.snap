@@ -1,0 +1,5 @@
+---
+source: tests/collector_test.rs
+expression: collector.entries
+---
+[]
