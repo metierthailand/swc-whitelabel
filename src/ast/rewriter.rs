@@ -120,6 +120,9 @@ impl VisitMut for WhitelabelRewriter {
                     .to_string()
                     .into();
 
+                let mut abs_out_dir = config.cwd.clone();
+                abs_out_dir.push(format!("{}{}", &config.src, &config.output_dir));
+
                 let import_decl = ModuleItem::ModuleDecl(ModuleDecl::Import(ImportDecl {
                     span: DUMMY_SP,
                     specifiers: vec![ImportSpecifier::Default(ImportDefaultSpecifier {
@@ -130,8 +133,7 @@ impl VisitMut for WhitelabelRewriter {
                         span: DUMMY_SP,
                         value: util::compute_relative_import(
                             current_filename.as_path().parent().unwrap(),
-                            PathBuf::from(format!("{}{}", &config.src, &config.output_dir))
-                                .as_path(),
+                            abs_out_dir.as_path(),
                         )
                         .unwrap()
                         .into(),

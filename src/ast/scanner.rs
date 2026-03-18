@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::{env, fs};
+use std::fs;
 use swc_core::common::Spanned;
 use swc_core::common::{SourceMap, sync::Lrc};
 use swc_core::ecma::{
@@ -9,6 +9,7 @@ use swc_core::ecma::{
 };
 
 use crate::ast::collector::WhitelabelEntry;
+use crate::config::config;
 use crate::util::report;
 
 // Scans the file for imports or local declarations that match known whitelabel symbols
@@ -38,8 +39,8 @@ impl SymbolScanner {
     /// Resolves an import string into an absolute physical file path
     /// Fully respects relative imports and tsconfig.json `paths` aliases.
     fn resolve_import(&self, current_file_path: PathBuf, import_src: &str) -> Option<PathBuf> {
+        let cfg = config::get();
         let mut base_paths_to_try = Vec::new();
-        let cwd = env::current_dir().expect("Failed to get current directory");
 
         // 🎯 CATEGORY 1: Relative Import (Bypasses TS paths)
         if import_src.starts_with('.')
@@ -51,7 +52,7 @@ impl SymbolScanner {
         // Step 1: Check for an EXACT match (e.g., "@/app/whitelabel")
         else if let Some(mapped_paths) = self.path_mapping.get(import_src) {
             for mapped_path in mapped_paths {
-                base_paths_to_try.push(cwd.join(mapped_path));
+                base_paths_to_try.push(cfg.cwd.join(mapped_path));
             }
         }
         // Step 2: Check for a WILDCARD match (e.g., "@app/*")
@@ -66,7 +67,7 @@ impl SymbolScanner {
             for mapped_path in mapped_paths {
                 // Inject the matched string into the mapped path's '*'
                 let resolved_mapped = mapped_path.replace("*", wildcard_match);
-                base_paths_to_try.push(cwd.join(resolved_mapped));
+                base_paths_to_try.push(cfg.cwd.join(resolved_mapped));
             }
         } else {
             return None;

@@ -1,6 +1,23 @@
-use crate::ast::collector::{self, WhitelabelEntry};
+use std::path::PathBuf;
 
-fn format_doc(entry: &WhitelabelEntry) -> String {
+use crate::{
+    ast::collector::{self, WhitelabelEntry},
+    config::config,
+    util,
+};
+
+fn to_rel_import(current_dir: &PathBuf, entry: &WhitelabelEntry) -> PathBuf {
+    let relative_import = match util::compute_relative_import(
+        current_dir,
+        PathBuf::from(&entry.import_path).as_path(),
+    ) {
+        Some(s) => PathBuf::from(s).with_extension(""),
+        None => todo!(),
+    };
+    relative_import
+}
+
+fn format_doc(entry: &WhitelabelEntry, current_dir: &PathBuf) -> String {
     format!(
         r#"/**
 * ### 🏷️ Tenant: `{}`
@@ -16,7 +33,7 @@ fn format_doc(entry: &WhitelabelEntry) -> String {
 */
 "#,
         entry.target.clone().unwrap_or_default(),
-        entry.import_path,
+        to_rel_import(&current_dir, entry).to_string_lossy(),
         entry.symbol,
         entry
             ._experiment_remark
@@ -28,6 +45,7 @@ fn format_doc(entry: &WhitelabelEntry) -> String {
 }
 
 pub fn generate(entries: &Vec<collector::WhitelabelEntry>, is_default: bool) -> String {
+    let cfg = config::get();
     let mut output = String::new();
     output.push_str(if !is_default {
         "// AUTO-GENERATED: DO NOT EDIT\n\nimport type { WhitelabelConfig } from '.';\n"
@@ -38,16 +56,22 @@ pub fn generate(entries: &Vec<collector::WhitelabelEntry>, is_default: bool) -> 
     let mut sorted_entries = entries.clone();
     sorted_entries.sort_by(|a, b| a.key.cmp(&b.key));
 
+    let mut current_dir = cfg.cwd.clone();
+    current_dir.push(&cfg.src);
+    current_dir.push(&cfg.output_dir);
+
     for entry in &sorted_entries {
+        let relative_import = to_rel_import(&current_dir, entry);
         output.push_str(&format!(
             "import {{ {} }} from \"{}\";\n",
-            entry.symbol, entry.import_path
+            entry.symbol,
+            relative_import.to_string_lossy()
         ));
     }
 
     output.push_str("\nconst whitelabel = {\n");
     for entry in &sorted_entries {
-        output.push_str(&format_doc(entry));
+        output.push_str(&format_doc(entry, &current_dir));
         if entry.symbol == entry.key {
             output.push_str(&format!("  {},\n", entry.symbol));
         } else {

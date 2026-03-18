@@ -11,10 +11,27 @@ serde = "1.0.220" # Pin strictly to the last working version
 serde_json = "1.0.149"
 swc_ecma_utils = "27.0.0"
 pathdiff = "0.2.3"
+
+[dev-dependencies]
 testing = "20.0.0"
 insta = {version = "1.46.3", features = ["yaml", "redactions"] }
 tempfile = "3.27.0"
 walkdir = "2.5.0"
+# 1. Strictly pin the crates you are using
+biome_js_parser = "=0.5.7"
+biome_js_syntax = "=0.5.7"
+biome_js_formatter = "=0.5.7"
+biome_formatter = "=0.5.7"
+
+# 2. Forcefully pin the failing internal/transitive crates to the same version
+biome_rowan = "=0.5.7"
+biome_json_syntax = "=0.5.7"
+biome_console = "=0.5.7"
+biome_diagnostics = "=0.5.7"
+biome_parser = "=0.5.7"
+biome_text_edit= "=0.5.7"
+biome_text_size = "=0.5.7"
+biome_unicode_table= "=0.5.7"
 
 [profile.release]
 opt-level = 3        # (Default) All out speed optimization
@@ -22,3 +39,4 @@ lto = true           # Link Time Optimization. Massive speed boost, but slower t
 codegen-units = 1    # Forces Rust to optimize the entire crate as one unit. 
 panic = "abort"      # Strips out stack-unwinding code. Makes the binary smaller and slightly faster.
 strip = true         # Automatically strips symbols from the binary, massively reducing file size!
+

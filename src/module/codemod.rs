@@ -27,7 +27,8 @@ pub fn exec(
     let mut global_symbols: HashMap<String, Vec<WhitelabelEntry>> = HashMap::new();
     let mut modified_files: Vec<String> = Vec::new();
     let cfg = config::get();
-    let ts_cfg = tsconfig::load(cfg.tsconfig.clone().unwrap())?;
+    let ts_cfg =
+        tsconfig::load(cfg.tsconfig.clone().unwrap()).expect("Failed to load tsconfig.json");
 
     for entry in &collector.entries {
         if let Some(existing) = global_symbols.get_mut(&entry.symbol) {

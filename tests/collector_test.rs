@@ -11,7 +11,7 @@ use testing::fixture;
 use wl_extractor::ast::collector::WhitelabelCollector;
 
 #[fixture("tests/fixtures/collector/**/*.tsx")]
-fn test_whitelabel_extraction(path: PathBuf) {
+fn test_collectors(path: PathBuf) {
     let cm: Lrc<SourceMap> = Default::default();
 
     let comments = SingleThreadedComments::default();
