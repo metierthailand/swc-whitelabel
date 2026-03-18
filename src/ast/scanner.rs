@@ -14,7 +14,7 @@ use crate::util::report;
 // Scans the file for imports or local declarations that match known whitelabel symbols
 pub struct SymbolScanner {
     pub source_map: Lrc<SourceMap>,
-    pub global_symbols: HashMap<String, WhitelabelEntry>,
+    pub global_symbols: HashMap<String, Vec<WhitelabelEntry>>,
     pub target_ids: HashMap<Id, String>,
     pub path_mapping: HashMap<String, Vec<String>>,
     current_file_name: Option<Lrc<swc_core::common::FileName>>,
@@ -22,7 +22,7 @@ pub struct SymbolScanner {
 
 impl SymbolScanner {
     pub fn new(
-        global_symbols: HashMap<String, WhitelabelEntry>,
+        global_symbols: HashMap<String, Vec<WhitelabelEntry>>,
         source_map: Lrc<SourceMap>,
         path_mapping: HashMap<String, Vec<String>>,
     ) -> Self {
@@ -129,12 +129,7 @@ impl Visit for SymbolScanner {
         let import_src = import.src.value.as_str().unwrap();
 
         // 2. Discriminate based on the Node.js resolution rules
-        let Some(resolved_path) = self.resolve_import(
-            self.current_file_name.as_ref().unwrap().to_string().into(),
-            import_src,
-        ) else {
-            return;
-        };
+        let mut lazy_resolved_path: Option<PathBuf> = None;
 
         // 2. Process specifiers and strictly compare paths!
         for specifier in &import.specifiers {
@@ -147,57 +142,79 @@ impl Visit for SymbolScanner {
 
                 // 3. MATHEMATICAL CERTAINTY: Does the absolute resolved path exactly match
                 // the file where the symbol was originally collected?
-                if let Some(entry) = self.global_symbols.get(&imported_name)
-                    && match fs::canonicalize(&resolved_path) {
-                        Ok(abs_resolved_path) => {
-                            let match_exact = match fs::canonicalize(&entry.import_path) {
-                                Ok(path) => path == abs_resolved_path,
-                                _ => true,
-                            };
-
-                            let match_parent = match fs::canonicalize(&entry.import_path)
-                                .map(|pb| pb.parent().map(|parent| parent.to_path_buf()))
-                            {
-                                Ok(parent) => parent.unwrap_or_default() == abs_resolved_path,
-                                _ => true,
-                            };
-
-                            match_exact || match_parent
+                if let Some(entries) = self.global_symbols.get(&imported_name) {
+                    let resolved_path = match &lazy_resolved_path {
+                        Some(r) => r,
+                        None => {
+                            lazy_resolved_path = self.resolve_import(
+                                self.current_file_name.as_ref().unwrap().to_string().into(),
+                                import_src,
+                            );
+                            &lazy_resolved_path.clone().expect(
+                                format!("Can't resolve path for {:?}", self.current_file_name)
+                                    .as_str(),
+                            )
                         }
-                        _ => false,
+                    };
+
+                    if let Some(entry) =
+                        entries
+                            .iter()
+                            .find(|entry| match fs::canonicalize(&resolved_path) {
+                                Ok(abs_resolved_path) => {
+                                    let match_exact = match fs::canonicalize(&entry.import_path) {
+                                        Ok(path) => path == abs_resolved_path,
+                                        _ => true,
+                                    };
+
+                                    let match_parent = match fs::canonicalize(&entry.import_path)
+                                        .map(|pb| pb.parent().map(|parent| parent.to_path_buf()))
+                                    {
+                                        Ok(parent) => {
+                                            parent.unwrap_or_default() == abs_resolved_path
+                                        }
+                                        _ => true,
+                                    };
+
+                                    match_exact || match_parent
+                                }
+                                _ => false,
+                            })
+                    {
+                        report(|| {
+                            println!(
+                                "\t 📡 (📦) {} @ {}",
+                                entry.key,
+                                self.current_file_name.as_ref().unwrap().to_string()
+                            )
+                        });
+                        self.target_ids
+                            .insert(named.local.to_id(), entry.key.clone());
                     }
-                {
-                    report(|| {
-                        println!(
-                            "\t 📡 (📦) {} @ {}",
-                            entry.key,
-                            self.current_file_name.as_ref().unwrap().to_string()
-                        )
-                    });
-                    self.target_ids
-                        .insert(named.local.to_id(), entry.key.clone());
                 }
             }
         }
     }
 
     fn visit_var_declarator(&mut self, decl: &VarDeclarator) {
-        if let Pat::Ident(ident) = &decl.name {
-            let name = ident.id.sym.to_string();
-            if let Some(entry) = self.global_symbols.get(&name)
-                && fs::canonicalize(self.current_file_name.as_ref().unwrap().to_string()).unwrap()
-                    == fs::canonicalize(&entry.import_path).unwrap()
-            {
-                report(|| {
-                    println!(
-                        "\t 📡 (🏠) {} @ {}",
-                        entry.key,
-                        self.current_file_name.as_ref().unwrap().to_string()
-                    )
-                });
-                self.target_ids.insert(ident.id.to_id(), entry.key.clone());
-            }
+        if let Pat::Ident(ident) = &decl.name
+            && let name = ident.id.sym.to_string()
+            && let Some(entries) = self.global_symbols.get(&name)
+            && let Some(entry) = entries.iter().find(|e| {
+                fs::canonicalize(self.current_file_name.as_ref().unwrap().to_string()).unwrap()
+                    == fs::canonicalize(&e.import_path).unwrap()
+            })
+        {
+            report(|| {
+                println!(
+                    "\t 📡 (🏠) {} @ {}",
+                    entry.key,
+                    self.current_file_name.as_ref().unwrap().to_string()
+                )
+            });
+            self.target_ids.insert(ident.id.to_id(), entry.key.clone());
         }
+
         decl.visit_children_with(self);
     }
 }

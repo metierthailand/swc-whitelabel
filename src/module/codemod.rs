@@ -13,7 +13,7 @@ use swc_core::{
     },
 };
 
-use crate::ast::collector::WhitelabelCollector;
+use crate::ast::collector::{WhitelabelCollector, WhitelabelEntry};
 use crate::ast::rewriter::WhitelabelRewriter;
 use crate::ast::scanner::SymbolScanner;
 use crate::config::{config, tsconfig};
@@ -24,13 +24,17 @@ pub fn exec(
     files: &Vec<std::result::Result<PathBuf, GlobError>>,
     collector: WhitelabelCollector<'_>,
 ) -> Result<Vec<String>> {
-    let mut global_symbols = HashMap::new();
+    let mut global_symbols: HashMap<String, Vec<WhitelabelEntry>> = HashMap::new();
     let mut modified_files: Vec<String> = Vec::new();
     let cfg = config::get();
     let ts_cfg = tsconfig::load(cfg.tsconfig.clone().unwrap())?;
 
     for entry in &collector.entries {
-        global_symbols.insert(entry.symbol.clone(), entry.clone());
+        if let Some(existing) = global_symbols.get_mut(&entry.symbol) {
+            existing.push(entry.clone());
+        } else {
+            global_symbols.insert(entry.symbol.clone(), vec![entry.clone()]);
+        }
     }
 
     for entry in files {
