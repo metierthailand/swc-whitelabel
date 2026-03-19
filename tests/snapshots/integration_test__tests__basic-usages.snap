@@ -12,6 +12,8 @@ import whitelabel from "../whitelabel";
 import { Heading } from "./_components/heading";
 // whitelabel: key=BG_COLOR
 export const bgClassname = "bg-red-500";
+// whitelabel: for=variant1, key=BG_COLOR
+export const variant1_bgClassname = "bg-green-500";
 const Homepage = () => (
   <div className={`h-full w-full ${whitelabel.BG_COLOR}`}>
     <whitelabel.Heading />
@@ -21,9 +23,6 @@ export default Homepage;
 
 
 --- app/variant1.const.tsx ---
-// whitelabel: for=variant1, key=BG_COLOR
-export const bgClassname = "bg-green-500";
-
 // whitelabel for=variant1
 export const Heading = () => <h1>Variant1 Heading</h1>;
 
@@ -100,23 +99,23 @@ export default configs[__current];
 // AUTO-GENERATED: DO NOT EDIT
 
 import type { WhitelabelConfig } from ".";
-import { bgClassname } from "../variant1.const";
+import { variant1_bgClassname } from "../home/page";
 import { Heading } from "../variant1.const";
 
 const whitelabel = {
   /**
    * ### 🏷️ Tenant: `variant1`
    *
-   * **from `../variant1.const`**
+   * **from `../home/page`**
    *
-   * Go to {@link bgClassname | implementation}.
+   * Go to {@link variant1_bgClassname | implementation}.
    * @default
    * ```tsx
    * "bg-green-500"
    * ```
    *
    */
-  BG_COLOR: bgClassname,
+  BG_COLOR: variant1_bgClassname,
   /**
    * ### 🏷️ Tenant: `variant1`
    *

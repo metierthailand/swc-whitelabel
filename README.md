@@ -6,10 +6,13 @@ In a multi-tenant application, we often have different configurations, strings, 
 
 ## 🚀 Features
 
-- ⚡️ **Blazing Fast**: Parses and transforms thousands of TS/TSX files in milliseconds.
-- 🧠 **AST-Aware**: Understands object shorthands, JSX, and variable shadowing.
-- 🔗 **Smart Pathing**: Respects `tsconfig.json` aliases (`paths`) and generates bulletproof relative imports.
-- 🪄 **Auto-Renaming**: If you change a whitelabel key, the tool automatically updates all references across the repo.
+It runs an SWC-powered AST (Abstract Syntax Tree) traversal over your codebase to do three things:
+
+1. **Extracts:** Finds any variable or function exported with a `// whitelabel:` comment.
+2. **Generates:** Builds a central TypeScript registry (`brandA.generated.tsx`, `index.ts`, etc.) based on those exports.
+3. **Rewrites (Codemod):** Goes through your files (like Next.js `page.tsx` files) and surgically replaces direct imports of those components/variables with property accesses on the generated `whitelabel` object.
+
+It resolves paths using Node.js rules and respects your `tsconfig.json` path aliases (like `@/components/*`).
 
 ---
 
@@ -20,10 +23,10 @@ Before running the tool, create a `whitelabel.config.json` file in the root of y
 ```json
 {
   "src": "./src",
-  "patterns": ["/**/*.tsx", "/**/*.ts"],
+  "patterns": ["**/*.tsx", "**/*.ts"],
   "output_dir": "/app/whitelabel",
-  "default_target": "defaultBrand",
-  "tsconfig": "./tsconfig.json"
+  "default_target": "brandA",
+  "tsconfig": "tsconfig.json"
 }
 ```
 
@@ -40,19 +43,14 @@ The directive format is: `// whitelabel: for=<target>, key=<custom_key>`
 - **`for`**: (Optional) The specific brand/tenant this code applies to. If omitted, it falls back to the `default_target` from your config. You can specify multiple targets separated by commas.
 - **`key`**: (Optional) A custom key for the registry. If omitted, the tool uses the variable's original name.
 
-**Example:**
+**Example:** [`basic-usages` fixture input](./tests/fixtures/integrations/basic-usages/app/home/page.tsx#L3-L7)
 
 ```tsx
-// src/components/Hero/index.tsx
+// whitelabel: key=BG_COLOR
+export const bgClassname = "bg-red-500";
 
-// whitelabel: for=brandA, key=HeroHeader
-export const BrandAHeader = () => <h1>Welcome to Brand A</h1>;
-
-// whitelabel: for=brandB, key=HeroHeader
-export const BrandBHeader = () => <h1>Welcome to Brand B</h1>;
-
-// whitelabel
-export const fallbackDescription = "Standard description";
+// whitelabel: for=variant1, key=BG_COLOR
+export const variant1_bgClassname = "bg-green-500";
 ```
 
 ### 2. Run the Extractor
@@ -60,14 +58,14 @@ export const fallbackDescription = "Standard description";
 Execute the CLI tool in your terminal:
 
 ```bash
-cargo build --release && target/release/wl-extractor
+cargo install --path . ; wl-extractor
 ```
 
-_(For CI/CD or piping, use `--file-name-only` to suppress human-readable logs.)_
+_(Tip: For CI/CD or piping to Prettier, use `wl-extractor --file-name-only` to suppress human-readable logs.)_
 
 ### 3. See the Magic (The Result)
 
-The tool will automatically generate a registry in your `output_dir` (e.g., `src/app/whitelabel`) containing:
+The tool will automatically generate a registry in your `output_dir` containing:
 
 1.  `brandA.generated.tsx` and `brandB.generated.tsx`
 2.  An `index.ts` that unites them into a strictly typed `WhitelabelConfig`.
@@ -75,35 +73,60 @@ The tool will automatically generate a registry in your `output_dir` (e.g., `src
 
 **Most importantly, it rewrites your local usages.** If you imported `BrandAHeader` somewhere else in your code, the tool transforms it:
 
-**Before:**
+**Before:** [basic-usages/app/home/page.tsx](./tests/fixtures/integrations/basic-usages/app/home/page.tsx)
 
 ```tsx
-import { BrandAHeader, fallbackDescription } from "./components/Hero";
+import { Heading } from "./_components/heading";
 
-export const Page = () => {
-  return (
-    <div>
-      <BrandAHeader />
-      <p>{fallbackDescription}</p>
-    </div>
-  );
-};
+// whitelabel: key=BG_COLOR
+export const bgClassname = "bg-red-500";
+
+// whitelabel: for=variant1, key=BG_COLOR
+export const variant1_bgClassname = "bg-green-500";
+
+const Homepage = () => (
+  <div className={`h-full w-full ${bgClassname}`}>
+    <Heading />
+  </div>
+);
+
+export default Homepage;
 ```
 
-**After:**
+**After:** [test snapshot](./tests/snapshots/integration_test__tests__basic-usages.snap#L10-L24)
 
 ```tsx
-import whitelabel from "../app/whitelabel"; // Auto-injected relative path
-
-export const Page = () => {
-  return (
-    <div>
-      <whitelabel.HeroHeader />
-      <p>{whitelabel.fallbackDescription}</p>
-    </div>
-  );
-};
+import whitelabel from "../whitelabel";
+import { Heading } from "./_components/heading";
+// whitelabel: key=BG_COLOR
+export const bgClassname = "bg-red-500";
+// whitelabel: for=variant1, key=BG_COLOR
+export const variant1_bgClassname = "bg-green-500";
+const Homepage = () => (
+  <div className={`h-full w-full ${whitelabel.BG_COLOR}`}>
+    <whitelabel.Heading />
+  </div>
+);
+export default Homepage;
 ```
+
+---
+
+## 🛑 Current Limitations (What it rejects)
+
+This tool works like magic, but even magic needs a strict set of rules.
+
+When dealing with automated AST (Abstract Syntax Tree) transformations, trying to support every single edge case of the TypeScript specification is a one-way ticket to brittle, unpredictable builds. **v1 explicitly ignores pure types and complex declarations**.
+
+If you try to put a `// whitelabel:` directive on the following syntax, the CLI will throw a validation error and skip it:
+
+- ❌ **Types & Interfaces:** (`export type Config = {}`, `export interface Props {}`)
+- ❌ **Enums:** (`export enum Colors {}`)
+- ❌ **Classes:** (`export class ApiClient {}`)
+- ❌ **Namespaces/Modules:** (`export module Utils {}`)
+- ❌ **Named Re-exports:** (`export { foo as companyName }`)
+
+_(💡 **Note:** You can still use classes, enums, and complex types extensively throughout your codebase! You just cannot tag them as the root whitelabel target to be extracted.)_
 
 ---
 
@@ -136,10 +159,3 @@ This is the most complex phase. The tool must safely replace local variables wit
     - **JSX Elements:** `<Foo />` becomes `<whitelabel.Foo />`.
 4.  **Import Injection:** If a file was modified, the tool calculates a dynamic, safe relative path from the current file to the generated registry using `pathdiff`. It then injects `import whitelabel from "..."` at the top of the AST.
 5.  **Rename Detection:** If you change a `key` in your magic comment, the tool parses the _old_ generated registry, detects the diff, and runs a secondary codemod to rename all `whitelabel.oldKey` to `whitelabel.newKey` across the entire codebase.
-
----
-
-## ⚠️ Current Limitations
-
-- **Named Re-exports:** Syntax like `export { foo as companyName }` is not supported. You must use direct inline exports.
-- **Formatting:** The AST emitter outputs standard ES2022 code. It is highly recommended to pipe the modified files into Prettier or ESLint after running the tool.
