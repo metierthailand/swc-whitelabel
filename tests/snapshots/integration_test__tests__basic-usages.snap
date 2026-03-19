@@ -1,0 +1,154 @@
+---
+source: tests/integration_test.rs
+expression: final_output
+---
+--- app/home/_components/heading.tsx ---
+// whitelabel
+export const Heading = () => <h1>Heading</h1>;
+
+
+--- app/home/page.tsx ---
+import whitelabel from "../whitelabel";
+import { Heading } from "./_components/heading";
+// whitelabel: key=BG_COLOR
+export const bgClassname = "bg-red-500";
+const Homepage = () => (
+  <div className={`h-full w-full ${whitelabel.BG_COLOR}`}>
+    <whitelabel.Heading />
+  </div>
+);
+export default Homepage;
+
+
+--- app/variant1.const.tsx ---
+// whitelabel: for=variant1, key=BG_COLOR
+export const bgClassname = "bg-green-500";
+
+// whitelabel for=variant1
+export const Heading = () => <h1>Variant1 Heading</h1>;
+
+
+--- app/whitelabel/default.generated.tsx ---
+// AUTO-GENERATED: DO NOT EDIT
+
+import { bgClassname } from "../home/page";
+import { Heading } from "../home/_components/heading";
+
+const whitelabel = {
+  /**
+   * ### 🏷️ Tenant: `default`
+   *
+   * **from `../home/page`**
+   *
+   * Go to {@link bgClassname | implementation}.
+   * @default
+   * ```tsx
+   * 'bg-red-500'
+   * ```
+   *
+   */
+  BG_COLOR: bgClassname,
+  /**
+   * ### 🏷️ Tenant: `default`
+   *
+   * **from `../home/_components/heading`**
+   *
+   * Go to {@link Heading | implementation}.
+   * @default
+   * ```tsx
+   * () => <h1>Heading</h1>
+   * ```
+   *
+   */
+  Heading,
+};
+
+export default whitelabel;
+
+
+--- app/whitelabel/determine-whitelabel.ts ---
+// THIS MODULE IS FOR CUSTOM LOGIC TO DETERMINE CURRENT WHITELABEL
+// TODO: possibility for HTTP per-request whitelabel
+
+import type { Whitelabel } from ".";
+
+const currentWhitelabel =
+  (process.env.NEXT_PUBLIC_WHITELABEL as Whitelabel) || "default";
+
+// ! exported result have to be `satisfies Whitelabel`
+export default currentWhitelabel satisfies Whitelabel;
+
+
+--- app/whitelabel/index.ts ---
+/* eslint-disable @typescript-eslint/no-require-imports */
+// AUTO-GENERATED: DO NOT EDIT
+import __current from "./determine-whitelabel";
+import type
+default from "./default.generated"
+export type WhitelabelConfig = typeof default;
+export type Whitelabel = "default" | "variant1";
+
+const configs: Record<Whitelabel, WhitelabelConfig> = {
+  default: require("./default.generated").default,
+  variant1: require("./variant1.generated").default,
+};
+
+export default configs[__current];
+
+
+--- app/whitelabel/variant1.generated.tsx ---
+// AUTO-GENERATED: DO NOT EDIT
+
+import type { WhitelabelConfig } from ".";
+import { bgClassname } from "../variant1.const";
+import { Heading } from "../variant1.const";
+
+const whitelabel = {
+  /**
+   * ### 🏷️ Tenant: `variant1`
+   *
+   * **from `../variant1.const`**
+   *
+   * Go to {@link bgClassname | implementation}.
+   * @default
+   * ```tsx
+   * "bg-green-500"
+   * ```
+   *
+   */
+  BG_COLOR: bgClassname,
+  /**
+   * ### 🏷️ Tenant: `variant1`
+   *
+   * **from `../variant1.const`**
+   *
+   * Go to {@link Heading | implementation}.
+   * @default
+   * ```tsx
+   * () => <h1>Variant1 Heading</h1>
+   * ```
+   *
+   */
+  Heading,
+} satisfies WhitelabelConfig;
+
+export default whitelabel;
+
+
+--- tsconfig.json ---
+{
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "paths": {}
+  }
+}
+
+
+--- whitelabel.config.json ---
+{
+  "src": "app/",
+  "patterns": ["**/*.tsx", "**/*.ts"],
+  "output_dir": "whitelabel",
+  "default_target": "default",
+  "tsconfig": "tsconfig.json"
+}

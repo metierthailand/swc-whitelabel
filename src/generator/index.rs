@@ -2,7 +2,10 @@ pub fn generate(targets: Vec<&String>, default_wl: String) -> String {
     let mut configs = String::new();
     let mut unions = String::from("export type Whitelabel =");
 
-    for target in &targets {
+    let mut sorted_targets = targets.to_vec();
+    sorted_targets.sort();
+
+    for target in sorted_targets {
         configs.push_str(&format!(
             "  {}: require('./{}.generated').default,\n",
             target, target

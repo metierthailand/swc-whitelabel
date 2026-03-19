@@ -2,6 +2,6 @@
   "src": "app/",
   "patterns": ["**/*.tsx", "**/*.ts"],
   "output_dir": "whitelabel",
-  "default_target": "bunny",
+  "default_target": "default",
   "tsconfig": "tsconfig.json"
 }
