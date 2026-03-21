@@ -25,7 +25,7 @@ We ruthlessly prioritize our backlog based on **Blast Radius and Risk Mitigation
 **Goal:** Ensure the tool runs smoothly on standard, messy real-world repositories without throwing Rust `panic!` traces.
 
 * [ ] **6. Halt on Validation Errors & Fix CLI Exit Codes:** Stop swallowing errors in `main.rs`. If the collector finds an invalid directive, the tool **must fail with a non-zero exit code** and halt before the codemod phase. "Partial success" is unacceptable for codebase-wide migrations.
-* [ ] **7. Eradicate `unwrap/expect/panic` in `run.rs`:** Convert all initialization, glob parsing, and file I/O errors into contextual `anyhow::Result` user-facing error messages. 
+* [x] **7. Eradicate `unwrap/expect/panic` in `run.rs`:** Convert all initialization, glob parsing, and file I/O errors into contextual `anyhow::Result` user-facing error messages. 
 
 ### 🟡 P2: The "Data Fidelity" Release (Fixing Silent Omissions)
 **Goal:** Guarantee that if a developer writes valid code or configurations, the tool captures it perfectly and warns them if they make a logical mistake.
@@ -39,7 +39,7 @@ We ruthlessly prioritize our backlog based on **Blast Radius and Risk Mitigation
 **Goal:** Make the codebase a joy to contribute to and mathematically proven to work.
 
 * [x] **12. Destroy the Global `OnceLock`:** Refactor `src/config/config.rs`. Passing a `&WhitelabelConfig` context down the pipeline eliminates the testability trap and allows for concurrent test runners.
-* [ ] **13. CI/CD Hardening:** Update GitHub Actions to include `cargo fmt --check`, `cargo clippy -- -D warnings`, and a release build verification.
+* [x] **13. CI/CD Hardening:** Update GitHub Actions to include `cargo fmt --check`, `cargo clippy -- -D warnings`, and a release build verification.
 * [ ] **14. Comprehensive E2E Tests:** Expand `tests/integration_test.rs` to cover alias-heavy imports, malformed configs, self-closing JSX, and unresolved imports.
 
 ### 🎨 P4: The "Documentation & Polish" Release

@@ -33,7 +33,7 @@ pub fn exec(
             continue;
         };
 
-        let Ok(fm) = cm.load_file(&path) else {
+        let Ok(fm) = cm.load_file(path) else {
             continue;
         };
         let lexer = Lexer::new(
@@ -70,7 +70,7 @@ pub fn exec(
             };
             let _ = emitter.emit_program(&program);
             if let Ok(code) = String::from_utf8(buf) {
-                let _ = fs::write(&path, code);
+                let _ = fs::write(path, code);
             }
         }
     }

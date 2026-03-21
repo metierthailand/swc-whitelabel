@@ -10,7 +10,7 @@ use swc_core::{
 use testing::fixture;
 use wl_extractor::{
     ast::collector::{WhitelabelCollector, WhitelabelEntry},
-    config::config,
+    config::env,
     util,
 };
 
@@ -18,7 +18,7 @@ use wl_extractor::{
 fn test_collectors(path: PathBuf) {
     let cm: Lrc<SourceMap> = Default::default();
     let comments = SingleThreadedComments::default();
-    match config::init(
+    match env::init(
         None,
         "tests/fixtures/integrations/basic-usages/whitelabel.config.json",
     ) {
@@ -62,7 +62,7 @@ fn test_collectors(path: PathBuf) {
             .entries
             .iter_mut()
             .map(|e| {
-                let to_rel = config::with_config(|cfg| {
+                let to_rel = env::with_config(|cfg| {
                     util::compute_relative_import(
                         cfg.cwd.as_path(),
                         PathBuf::from(&e.import_path).as_path(),

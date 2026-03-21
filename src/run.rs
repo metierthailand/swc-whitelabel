@@ -1,6 +1,7 @@
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use glob::{GlobError, glob};
 use std::fs;
+use std::ops::Deref;
 use std::{collections::HashMap, path::PathBuf};
 use swc_core::{
     common::{
@@ -34,11 +35,11 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
 
     let globals = Globals::new();
 
-    let Ok(_) = config::config::init(cwd, "whitelabel.config.json") else {
+    let Ok(_) = config::env::init(cwd, "whitelabel.config.json") else {
         panic!("Failed to load config");
     };
 
-    let cfg = config::config::with_config(|c| c.clone());
+    let cfg = config::env::with_config(|c| c.clone());
 
     let report_modified_files = create_reporter(|c| c.output_file_name_only);
 
@@ -76,23 +77,23 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
             }
         }
     }
+    let mut files: Vec<Result<PathBuf, GlobError>> = vec![];
 
-    GLOBALS.set(&globals, || {
-        let mut files: Vec<Result<PathBuf, GlobError>> = vec![];
+    let root_dir = cfg.cwd.join(&cfg.src);
 
+    for pattern in &cfg.patterns {
+        let abs = root_dir.join(pattern);
+        let Some(Ok(paths)) = abs.to_str().map(glob) else {
+            return Err(anyhow!("Failed to load {}", pattern));
+        };
+        for p in paths {
+            files.push(p);
+        }
+    }
+
+    GLOBALS.set(&globals, move || {
         // let mut root_dir = cfg.cwd.clone();
         // root_dir.push(&cfg.src);
-        let root_dir = cfg.cwd.join(&cfg.src);
-
-        for pattern in &cfg.patterns {
-            let abs = root_dir.join(pattern);
-            let Ok(paths) = glob(abs.to_str().unwrap()) else {
-                panic!("Failed to load {}", pattern)
-            };
-            for p in paths {
-                files.push(p);
-            }
-        }
 
         report(|| {
             println!("🔍 Start collecting whitelabel keys ...");
@@ -104,14 +105,17 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
 
         // Scan for TSX files
         for entry in &files {
-            let path = entry.as_ref().unwrap();
+            let path = match entry.as_ref() {
+                Ok(path) => path,
+                Err(e) => return Err(anyhow!("Failed to unwrap entry: {:?}", e.error())),
+            };
 
             // Skip the generated file to avoid infinite loops
             if path.to_string_lossy().contains(cfg.output_dir.as_str()) {
                 continue;
             }
 
-            let fm = cm.load_file(&path)?;
+            let fm = cm.load_file(path)?;
 
             let lexer = Lexer::new(
                 Syntax::Typescript(TsSyntax {
@@ -156,34 +160,34 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
             let relative_pb = pb.strip_prefix(&root_dir).unwrap_or(&pb);
 
             entry.import_path = relative_pb.to_string_lossy().to_string();
-            if entry.target.is_none() {
-                entry.target = Some(cfg.default_target.clone());
-            }
+            let actual_target = match entry.target.clone() {
+                Some(t) => t,
+                None => cfg.default_target.clone(),
+            };
 
-            if let Some(prev_key) = existing_whitelabel_scanner.symbol_to_key.get(&entry.symbol) {
-                if prev_key != &entry.key
-                    && entry.target.as_deref() == Some(cfg.default_target.as_str())
-                {
-                    report(|| {
-                        println!(
-                            "\t ⚠️ Detected renamed directive: '{}' -> '{}'",
-                            prev_key, entry.key
-                        );
-                    });
-                    rename_map.insert(prev_key.clone(), entry.key.clone());
-                }
+            if let Some(prev_key) = existing_whitelabel_scanner.symbol_to_key.get(&entry.symbol)
+                && prev_key != &entry.key
+                && actual_target == cfg.default_target.as_str()
+            {
+                report(|| {
+                    println!(
+                        "\t ⚠️ Detected renamed directive: '{}' -> '{}'",
+                        prev_key, entry.key
+                    );
+                });
+                rename_map.insert(prev_key.clone(), entry.key.clone());
             }
             report(|| {
                 println!(
                     "\t🪡 ({}) found {} @ {}",
-                    entry.target.as_deref().unwrap_or_default(),
-                    entry.symbol,
-                    entry.import_path
+                    actual_target, entry.symbol, entry.import_path
                 );
             });
 
+            entry.target = Some(actual_target.deref().to_string());
+
             grouped_entries
-                .entry(entry.target.clone().unwrap())
+                .entry(actual_target.clone())
                 .or_default()
                 .push(entry);
         }
@@ -211,7 +215,7 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
         fs::write(
             &target_path,
             generator::index::generate(
-                grouped_entries.iter().map(|(target, _)| target).collect(),
+                grouped_entries.keys().collect(),
                 cfg.default_target.clone(),
             ),
         )?;

@@ -13,7 +13,7 @@ use swc_core::{
     },
 };
 
-use crate::{config::config, util};
+use crate::{config::env, util};
 
 #[derive(Clone)]
 struct WhitelabelDirective {
@@ -97,24 +97,24 @@ impl<'a> Visit for WhitelabelCollector<'a> {
         {
             match &export.decl {
                 Decl::Var(var_decl) => {
-                    if let Some(decl) = var_decl.decls.first() {
-                        if let Pat::Ident(ident) = &decl.name {
-                            let symbol = ident.id.sym.to_string();
-                            let final_key = key.clone().unwrap_or_else(|| symbol.clone());
+                    if let Some(decl) = var_decl.decls.first()
+                        && let Pat::Ident(ident) = &decl.name
+                    {
+                        let symbol = ident.id.sym.to_string();
+                        let final_key = key.clone().unwrap_or_else(|| symbol.clone());
 
-                            // Loop through all targets and push an entry for each!
-                            for target in targets {
-                                self.entries.push(WhitelabelEntry {
-                                    target,
-                                    key: final_key.clone(),
-                                    symbol: symbol.clone(),
-                                    import_path: self.get_filename(export.span),
-                                    _experiment_remark: self
-                                        .source_map
-                                        .span_to_snippet(decl.init.span())
-                                        .unwrap_or_default(),
-                                });
-                            }
+                        // Loop through all targets and push an entry for each!
+                        for target in targets {
+                            self.entries.push(WhitelabelEntry {
+                                target,
+                                key: final_key.clone(),
+                                symbol: symbol.clone(),
+                                import_path: self.get_filename(export.span),
+                                _experiment_remark: self
+                                    .source_map
+                                    .span_to_snippet(decl.init.span())
+                                    .unwrap_or_default(),
+                            });
                         }
                     }
                 }
@@ -138,16 +138,16 @@ impl<'a> Visit for WhitelabelCollector<'a> {
                 _ => {
                     let loc = self.source_map.lookup_char_pos(export.span.lo);
 
-                    let rel_path = config::with_config(|cfg| {
+                    let rel_path = env::with_config(|cfg| {
                         util::compute_relative_import(
-                            PathBuf::from(cfg.cwd.clone()).as_path(),
+                            cfg.cwd.clone().as_path(),
                             PathBuf::from(self.get_filename(export.span)).as_path(),
                         )
                     });
 
                     self.errors.push(format!(
                         "Unsupported export declaration for whitelabel {} @{}",
-                        rel_path.unwrap().to_string(),
+                        rel_path.unwrap_or(loc.file.name.to_string()),
                         loc.line
                     ))
                 }
@@ -159,16 +159,16 @@ impl<'a> Visit for WhitelabelCollector<'a> {
     // Fail loud on re-exports (e.g., `export { foo as companyName }`)
     fn visit_named_export(&mut self, export: &NamedExport) {
         if self.get_whitelabel_target_and_key(export.span).is_some() {
-            let rel_path = config::with_config(|cfg| {
+            let rel_path = env::with_config(|cfg| {
                 util::compute_relative_import(
-                    PathBuf::from(cfg.cwd.clone()).as_path(),
+                    cfg.cwd.clone().as_path(),
                     PathBuf::from(self.get_filename(export.span)).as_path(),
                 )
             });
             self.errors.push(format!(
                 "File {} contains a whitelabel directive on a named export block. \
                 This is not supported in v1. Use direct inline exports.",
-                rel_path.unwrap().to_string()
+                rel_path.unwrap_or("N/A".to_string())
             ));
         }
         export.visit_children_with(self);

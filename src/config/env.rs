@@ -9,11 +9,16 @@ pub struct WhitelabelConfig {
     pub patterns: Vec<String>,
     pub output_dir: String,
     pub default_target: String,
-    pub tsconfig: Option<String>,
+    #[serde(default = "tsconfig")]
+    pub tsconfig: String,
     #[serde(skip)]
     pub output_file_name_only: bool,
     #[serde(skip)]
     pub cwd: PathBuf,
+}
+
+fn tsconfig() -> String {
+    "tsconfig.json".to_string()
 }
 
 thread_local! {
@@ -21,7 +26,7 @@ thread_local! {
 }
 
 pub fn init(cwd: Option<PathBuf>, config_filename: &str) -> Result<()> {
-    let resolved_cwd = cwd.unwrap_or(env::current_dir().unwrap());
+    let resolved_cwd = cwd.map_or_else(env::current_dir, Ok)?;
     let mut resolved_file = resolved_cwd.clone();
 
     resolved_file.push(config_filename);
@@ -39,12 +44,12 @@ pub fn init(cwd: Option<PathBuf>, config_filename: &str) -> Result<()> {
         .context("Failed to parse whitelabel.config.json. Is the JSON strictly valid?")?;
 
     let mut resolved_tsconfig_path = resolved_cwd.clone();
-    resolved_tsconfig_path.push(config.tsconfig.unwrap_or("tsconfig.json".into()));
+    resolved_tsconfig_path.push(config.tsconfig);
 
     config.output_file_name_only = std::env::args().any(|arg| arg == "--file-name-only");
     config.cwd = resolved_cwd;
 
-    config.tsconfig = Some(resolved_tsconfig_path.to_string_lossy().to_string());
+    config.tsconfig = resolved_tsconfig_path.to_string_lossy().to_string();
 
     // Lock the config into our global state. It can never be overwritten!
     CONFIG.with(|c| {

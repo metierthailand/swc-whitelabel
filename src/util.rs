@@ -1,23 +1,23 @@
-use crate::config::config::{self, WhitelabelConfig};
+use crate::config::env::{self, WhitelabelConfig};
 use pathdiff::diff_paths;
 use std::path::Path;
 
-pub fn report<F>(f: F) -> ()
+pub fn report<F>(f: F)
 where
-    F: FnOnce() -> (),
+    F: FnOnce(),
 {
-    config::with_config(|cfg| {
+    env::with_config(|cfg| {
         if !cfg.output_file_name_only {
             f()
         };
     })
 }
 
-pub fn create_reporter<F>(pred: F) -> impl Fn(Box<dyn FnOnce()>) -> ()
+pub fn create_reporter<F>(pred: F) -> impl Fn(Box<dyn FnOnce()>)
 where
     F: FnOnce(&WhitelabelConfig) -> bool,
 {
-    let is_allowed = config::with_config(|cfg| pred(cfg));
+    let is_allowed = env::with_config(|cfg| pred(cfg));
 
     move |f| {
         if is_allowed {

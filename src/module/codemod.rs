@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use glob::GlobError;
 use std::fs;
 use std::{collections::HashMap, path::PathBuf};
@@ -16,7 +16,7 @@ use swc_core::{
 use crate::ast::collector::{WhitelabelCollector, WhitelabelEntry};
 use crate::ast::rewriter::WhitelabelRewriter;
 use crate::ast::scanner::SymbolScanner;
-use crate::config::{config, tsconfig};
+use crate::config::{env, tsconfig};
 use crate::util::report;
 
 pub fn exec(
@@ -26,10 +26,8 @@ pub fn exec(
 ) -> Result<Vec<String>> {
     let mut global_symbols: HashMap<String, Vec<WhitelabelEntry>> = HashMap::new();
     let mut modified_files: Vec<String> = Vec::new();
-    let ts_cfg = config::with_config(|cfg| {
-        tsconfig::load(cfg.tsconfig.clone().unwrap()).expect("Failed to load tsconfig.json")
-    });
-    let output_dir = config::with_config(|cfg| cfg.output_dir.clone());
+    let ts_cfg = env::with_config(|cfg| tsconfig::load(cfg.tsconfig.clone()))?;
+    let output_dir = env::with_config(|cfg| cfg.output_dir.clone());
 
     // 🎯 IDIOMATIC: Consuming the iterator (Value Move)
     for entry in collector.entries.into_iter() {
@@ -40,12 +38,15 @@ pub fn exec(
     }
 
     for entry in files {
-        let path = entry.as_ref().unwrap();
+        let path = match entry.as_ref() {
+            Ok(path) => path,
+            Err(e) => return Err(anyhow!("Failed to unwrap entry: {:?}", e.error())),
+        };
         if path.to_string_lossy().contains(output_dir.as_str()) {
             continue;
         }
 
-        let fm = cm.load_file(&path)?;
+        let fm = cm.load_file(path)?;
         let comments = SingleThreadedComments::default();
         let lexer = Lexer::new(
             Syntax::Typescript(TsSyntax {
@@ -90,7 +91,7 @@ pub fn exec(
                 wr: JsWriter::new(cm.clone(), "\n", &mut buf, None),
             };
             emitter.emit_program(&program)?;
-            fs::write(&path, String::from_utf8(buf)?)?;
+            fs::write(path, String::from_utf8(buf)?)?;
             modified_files.push(path.to_string_lossy().to_string());
 
             report(|| {

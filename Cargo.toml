@@ -36,7 +36,6 @@ biome_unicode_table= "=0.5.7"
 [profile.release]
 opt-level = 3        # (Default) All out speed optimization
 lto = true           # Link Time Optimization. Massive speed boost, but slower to compile.
-codegen-units = 1    # Forces Rust to optimize the entire crate as one unit. 
+codegen-units = 1    # Forces Rust to optimize the entire crate as one unit.
 panic = "abort"      # Strips out stack-unwinding code. Makes the binary smaller and slightly faster.
 strip = true         # Automatically strips symbols from the binary, massively reducing file size!
-

@@ -118,16 +118,6 @@ mod tests {
         // Example: my_extractor::run(workspace.path());
         let _ = wl_extractor::run::run(Some(workspace.path().to_path_buf()));
 
-        // // --- MOCK EXECUTION FOR EXAMPLE ---
-        // // Let's pretend the tool generated the registry and modified the input
-        // fs::write(
-        //     workspace.path().join("src/app/brv.generated.tsx"),
-        //     "export const generated = true;",
-        // )
-        // .unwrap();
-        // fs::write(workspace.path().join("src/index.tsx"), "/* MODIFIED AST */").unwrap();
-        // ----------------------------------
-
         // 4. Assert the Results!
         // This takes everything in the temp folder and compares it to the saved snapshot
         let final_output = workspace.snapshot_results();
