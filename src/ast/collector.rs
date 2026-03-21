@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use serde::Serialize;
 use swc_core::{
     common::{
@@ -10,6 +12,8 @@ use swc_core::{
         visit::{Visit, VisitWith},
     },
 };
+
+use crate::{config::config, util};
 
 #[derive(Clone)]
 struct WhitelabelDirective {
@@ -133,9 +137,17 @@ impl<'a> Visit for WhitelabelCollector<'a> {
                 }
                 _ => {
                     let loc = self.source_map.lookup_char_pos(export.span.lo);
+
+                    let rel_path = config::with_config(|cfg| {
+                        util::compute_relative_import(
+                            PathBuf::from(cfg.cwd.clone()).as_path(),
+                            PathBuf::from(self.get_filename(export.span)).as_path(),
+                        )
+                    });
+
                     self.errors.push(format!(
                         "Unsupported export declaration for whitelabel {} @{}",
-                        loc.file.name.to_string(),
+                        rel_path.unwrap().to_string(),
                         loc.line
                     ))
                 }
@@ -147,10 +159,16 @@ impl<'a> Visit for WhitelabelCollector<'a> {
     // Fail loud on re-exports (e.g., `export { foo as companyName }`)
     fn visit_named_export(&mut self, export: &NamedExport) {
         if self.get_whitelabel_target_and_key(export.span).is_some() {
+            let rel_path = config::with_config(|cfg| {
+                util::compute_relative_import(
+                    PathBuf::from(cfg.cwd.clone()).as_path(),
+                    PathBuf::from(self.get_filename(export.span)).as_path(),
+                )
+            });
             self.errors.push(format!(
                 "File {} contains a whitelabel directive on a named export block. \
                 This is not supported in v1. Use direct inline exports.",
-                self.get_filename(export.span)
+                rel_path.unwrap().to_string()
             ));
         }
         export.visit_children_with(self);

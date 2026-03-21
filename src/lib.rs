@@ -1,7 +1,7 @@
 pub mod ast;
+pub mod config;
 pub mod run;
 
-mod config;
 mod generator;
 mod module;
 mod util;

@@ -8,16 +8,20 @@ use swc_core::{
     },
 };
 use testing::fixture;
-use wl_extractor::ast::collector::WhitelabelCollector;
+use wl_extractor::{ast::collector::WhitelabelCollector, config::config};
 
 #[fixture("tests/fixtures/collector/**/*.tsx")]
 fn test_collectors(path: PathBuf) {
     let cm: Lrc<SourceMap> = Default::default();
-
     let comments = SingleThreadedComments::default();
-
+    match config::init(
+        None,
+        "tests/fixtures/integrations/basic-usages/whitelabel.config.json",
+    ) {
+        Ok(_) => {}
+        Err(e) => eprintln!("{:?}", e),
+    }
     let mut collector = WhitelabelCollector::new(&cm, &comments);
-
     let fm = cm.load_file(&path).unwrap();
 
     let lexer = Lexer::new(
