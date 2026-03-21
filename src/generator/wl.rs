@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use crate::{
     ast::collector::{self, WhitelabelEntry},
@@ -6,7 +6,7 @@ use crate::{
     util,
 };
 
-fn to_rel_import(current_dir: &PathBuf, entry: &WhitelabelEntry) -> PathBuf {
+fn to_rel_import(current_dir: &Path, entry: &WhitelabelEntry) -> PathBuf {
     let absolute_target =
         config::with_config(|cfg| cfg.cwd.join(&cfg.src).join(&entry.import_path));
 
@@ -16,7 +16,7 @@ fn to_rel_import(current_dir: &PathBuf, entry: &WhitelabelEntry) -> PathBuf {
     }
 }
 
-fn format_doc(entry: &WhitelabelEntry, current_dir: &PathBuf) -> String {
+fn format_doc(entry: &WhitelabelEntry, current_dir: &Path) -> String {
     format!(
         r#"/**
 * ### 🏷️ Tenant: `{}`

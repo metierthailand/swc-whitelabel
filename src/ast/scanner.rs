@@ -56,8 +56,9 @@ impl<'a> SymbolScanner<'a> {
             }
         }
         // Step 2: Check for a WILDCARD match (e.g., "@app/*")
-        else if let Some((pattern, mapped_paths, _)) = self.best_path_mapping_match(import_src) {
-            let star_idx = pattern.find('*').unwrap();
+        else if let Some((pattern, mapped_paths, _)) = self.best_path_mapping_match(import_src)
+            && let Some(star_idx) = pattern.find('*')
+        {
             let prefix = &pattern[..star_idx];
             let suffix = &pattern[star_idx + 1..];
 
@@ -127,7 +128,9 @@ impl<'a> Visit for SymbolScanner<'a> {
     }
     fn visit_import_decl(&mut self, import: &ImportDecl) {
         // 1. Grab the raw string (e.g., "./foo" or "@repo/foo")
-        let import_src = import.src.value.as_str().unwrap();
+        let Some(import_src) = import.src.value.as_str() else {
+            return;
+        };
 
         // 2. Discriminate based on the Node.js resolution rules
         let mut lazy_resolved_path: Option<PathBuf> = None;
@@ -137,7 +140,11 @@ impl<'a> Visit for SymbolScanner<'a> {
             if let ImportSpecifier::Named(named) = specifier {
                 let imported_name = match &named.imported {
                     Some(ModuleExportName::Ident(ident)) => ident.sym.to_string(),
-                    Some(ModuleExportName::Str(s)) => s.value.as_str().unwrap().into(),
+                    Some(ModuleExportName::Str(s)) => s
+                        .value
+                        .as_str()
+                        .unwrap_or_else(|| panic!("Malformed ModuleExportName::Str({:?})", s))
+                        .into(),
                     None => named.local.sym.to_string(),
                 };
 
@@ -147,11 +154,19 @@ impl<'a> Visit for SymbolScanner<'a> {
                     let resolved_path = match &lazy_resolved_path {
                         Some(r) => r,
                         None => {
-                            lazy_resolved_path = self.resolve_import(
-                                self.current_file_name.as_ref().unwrap().to_string().into(),
-                                import_src,
-                            );
-                            lazy_resolved_path.as_ref().unwrap_or_else(|| panic!("Can't resolve path for {:?}", self.current_file_name))
+                            lazy_resolved_path =
+                                self.current_file_name
+                                    .as_ref()
+                                    .and_then(|current_file_name| {
+                                        self.resolve_import(
+                                            current_file_name.to_string().into(),
+                                            import_src,
+                                        )
+                                    });
+                            match lazy_resolved_path.as_ref() {
+                                Some(resolved_path) => resolved_path,
+                                None => continue,
+                            }
                         }
                     };
 
@@ -184,11 +199,9 @@ impl<'a> Visit for SymbolScanner<'a> {
                             })
                     {
                         report(|| {
-                            println!(
-                                "\t 📡 (📦) {} @ {}",
-                                entry.key,
-                                self.current_file_name.as_ref().unwrap()
-                            )
+                            if let Some(file_name) = self.current_file_name.as_ref() {
+                                println!("\t 📡 (📦) {} @ {}", entry.key, file_name)
+                            }
                         });
                         self.target_ids
                             .insert(named.local.to_id(), entry.key.clone());
@@ -205,16 +218,18 @@ impl<'a> Visit for SymbolScanner<'a> {
             && let Some(entry) = entries.iter().find(|e| {
                 let absolute_import_path =
                     config::with_config(|cfg| cfg.cwd.join(&cfg.src).join(&e.import_path));
-                fs::canonicalize(self.current_file_name.as_ref().unwrap().to_string()).unwrap()
-                    == fs::canonicalize(&absolute_import_path).unwrap()
+
+                // FIXME: There can be case where None = None
+                self.current_file_name
+                    .as_ref()
+                    .and_then(|file| fs::canonicalize(file.to_string()).ok())
+                    == fs::canonicalize(&absolute_import_path).ok()
             })
         {
             report(|| {
-                println!(
-                    "\t 📡 (🏠) {} @ {}",
-                    entry.key,
-                    self.current_file_name.as_ref().unwrap()
-                )
+                if let Some(file_name) = self.current_file_name.as_ref() {
+                    println!("\t 📡 (🏠) {} @ {}", entry.key, file_name)
+                }
             });
             self.target_ids.insert(ident.id.to_id(), entry.key.clone());
         }

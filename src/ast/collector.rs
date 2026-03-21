@@ -98,24 +98,25 @@ impl<'a> Visit for WhitelabelCollector<'a> {
             match &export.decl {
                 Decl::Var(var_decl) => {
                     if let Some(decl) = var_decl.decls.first()
-                        && let Pat::Ident(ident) = &decl.name {
-                            let symbol = ident.id.sym.to_string();
-                            let final_key = key.clone().unwrap_or_else(|| symbol.clone());
+                        && let Pat::Ident(ident) = &decl.name
+                    {
+                        let symbol = ident.id.sym.to_string();
+                        let final_key = key.clone().unwrap_or_else(|| symbol.clone());
 
-                            // Loop through all targets and push an entry for each!
-                            for target in targets {
-                                self.entries.push(WhitelabelEntry {
-                                    target,
-                                    key: final_key.clone(),
-                                    symbol: symbol.clone(),
-                                    import_path: self.get_filename(export.span),
-                                    _experiment_remark: self
-                                        .source_map
-                                        .span_to_snippet(decl.init.span())
-                                        .unwrap_or_default(),
-                                });
-                            }
+                        // Loop through all targets and push an entry for each!
+                        for target in targets {
+                            self.entries.push(WhitelabelEntry {
+                                target,
+                                key: final_key.clone(),
+                                symbol: symbol.clone(),
+                                import_path: self.get_filename(export.span),
+                                _experiment_remark: self
+                                    .source_map
+                                    .span_to_snippet(decl.init.span())
+                                    .unwrap_or_default(),
+                            });
                         }
+                    }
                 }
                 Decl::Fn(fn_decl) => {
                     let symbol = fn_decl.ident.sym.to_string();
@@ -146,7 +147,7 @@ impl<'a> Visit for WhitelabelCollector<'a> {
 
                     self.errors.push(format!(
                         "Unsupported export declaration for whitelabel {} @{}",
-                        rel_path.unwrap(),
+                        rel_path.unwrap_or(loc.file.name.to_string()),
                         loc.line
                     ))
                 }
@@ -167,7 +168,7 @@ impl<'a> Visit for WhitelabelCollector<'a> {
             self.errors.push(format!(
                 "File {} contains a whitelabel directive on a named export block. \
                 This is not supported in v1. Use direct inline exports.",
-                rel_path.unwrap()
+                rel_path.unwrap_or("N/A".to_string())
             ));
         }
         export.visit_children_with(self);

@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use glob::GlobError;
 use std::fs;
 use std::{collections::HashMap, path::PathBuf};
@@ -26,9 +26,7 @@ pub fn exec(
 ) -> Result<Vec<String>> {
     let mut global_symbols: HashMap<String, Vec<WhitelabelEntry>> = HashMap::new();
     let mut modified_files: Vec<String> = Vec::new();
-    let ts_cfg = config::with_config(|cfg| {
-        tsconfig::load(cfg.tsconfig.clone().unwrap()).expect("Failed to load tsconfig.json")
-    });
+    let ts_cfg = config::with_config(|cfg| tsconfig::load(cfg.tsconfig.clone()))?;
     let output_dir = config::with_config(|cfg| cfg.output_dir.clone());
 
     // 🎯 IDIOMATIC: Consuming the iterator (Value Move)
@@ -40,7 +38,10 @@ pub fn exec(
     }
 
     for entry in files {
-        let path = entry.as_ref().unwrap();
+        let path = match entry.as_ref() {
+            Ok(path) => path,
+            Err(e) => return Err(anyhow!("Failed to unwrap entry: {:?}", e.error())),
+        };
         if path.to_string_lossy().contains(output_dir.as_str()) {
             continue;
         }
