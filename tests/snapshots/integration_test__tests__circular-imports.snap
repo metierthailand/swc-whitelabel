@@ -1,6 +1,6 @@
 ---
 source: tests/integration_test.rs
-expression: final_output
+expression: idempt_output
 ---
 --- app/src.ts ---
 import whitelabel from "./whitelabel";
@@ -43,8 +43,7 @@ export default whitelabel;
 
 import type { Variants } from ".";
 
-const currentWhitelabel =
-  (process.env.NEXT_PUBLIC_WHITELABEL as Variants) || "def";
+const currentWhitelabel = (process.env.NEXT_PUBLIC_WHITELABEL as Variants) || "def";
 
 // ! exported result must be `satisfies Variants`
 export default currentWhitelabel satisfies Variants;
