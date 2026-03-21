@@ -165,7 +165,17 @@ impl<'a> Visit for SymbolScanner<'a> {
                                     });
                             match lazy_resolved_path.as_ref() {
                                 Some(resolved_path) => resolved_path,
-                                None => continue,
+                                None => {
+                                    report(|| {
+                                        if let Some(file_name) = self.current_file_name.as_ref() {
+                                            println!(
+                                                "\t ⚠️ [Warning] Could not resolve import '{}' in {}. Skipping...",
+                                                import_src, file_name
+                                            );
+                                        }
+                                    });
+                                    continue;
+                                }
                             }
                         }
                     };

@@ -37,8 +37,6 @@ pub fn init(cwd: Option<PathBuf>, config_filename: &str) -> Result<()> {
         resolved_file.display()
     ))?;
 
-    println!("{}", resolved_file.to_string_lossy());
-
     // Deserialize the JSON string into our struct
     let mut config: WhitelabelConfig = serde_json::from_str(&config_str)
         .context("Failed to parse whitelabel.config.json. Is the JSON strictly valid?")?;

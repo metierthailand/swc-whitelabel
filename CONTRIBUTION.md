@@ -18,7 +18,7 @@ We ruthlessly prioritize our backlog based on **Blast Radius and Risk Mitigation
 * [x] **1. ES Module Circular Dependencies (Runtime App Crash):** If our codemod forces a top-level read of an uninitialized lexical binding, the ES Module loader throws a `ReferenceError`. We must output cyclic-safe code (e.g., getter functions).
 * [x] **2. Idempotency (Double-writes):** Running the tool twice must yield the exact same file state. No duplicate `import whitelabel from...` injections.
 * [ ] **3. Optional `compilerOptions.paths`:** Many valid TypeScript projects don't use `paths`. The tool currently crashes via `expect("Failed to load tsconfig.json")` if this is missing. It must default to an empty map instead of panicking.
-* [ ] **4. Graceful Unresolved Imports:** Right now, one bad/unresolvable import causes an `expect()` panic that aborts the entire codemod. Unresolved imports should log a warning and be skipped, not crash the binary.
+* [x] **4. Graceful Unresolved Imports:** Right now, one bad/unresolvable import causes an `expect()` panic that aborts the entire codemod. Unresolved imports should log a warning and be skipped, not crash the binary.
 * [x] **5. JSX Closing Tags (Syntax Corruption):** The codemod must rewrite `</BrandAHeader>` to `</whitelabel.HeroHeader>`, otherwise the React AST is physically broken.
 
 ### 🛑 P1: The "Adoption Blocker" Release (Fixing Panics)
