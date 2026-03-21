@@ -1,0 +1,85 @@
+---
+source: tests/integration_test.rs
+expression: final_output
+---
+--- app/src.ts ---
+import whitelabel from "./whitelabel";
+// whitelabel
+export const foo = "foo";
+console.log(whitelabel.foo);
+
+
+--- app/whitelabel/def.generated.tsx ---
+// AUTO-GENERATED: DO NOT EDIT
+
+import type { foo } from "../src";
+
+export class whitelabel {
+  /**
+   * ### 🏷️ Tenant: `def`
+   *
+   * **from `../src`**
+   *
+   * Go to {@link foo | implementation}.
+   * @default
+   * ```tsx
+   * "foo"
+   * ```
+   *
+   */
+  public get foo(): typeof foo {
+    return require("../src").foo;
+  }
+}
+
+export default whitelabel;
+
+
+--- app/whitelabel/determine-whitelabel.ts ---
+// THIS MODULE IS FOR CUSTOM LOGIC TO DETERMINE CURRENT WHITELABEL
+// TODO: possibility for HTTP per-request whitelabel
+
+import type { Variants } from ".";
+
+const currentWhitelabel =
+  (process.env.NEXT_PUBLIC_WHITELABEL as Variants) || "def";
+
+// ! exported result must be `satisfies Variants`
+export default currentWhitelabel satisfies Variants;
+
+
+--- app/whitelabel/index.ts ---
+/* eslint-disable @typescript-eslint/no-require-imports */
+// AUTO-GENERATED: DO NOT EDIT
+import __current from "./determine-whitelabel";
+import type def from "./def.generated";
+export type WhitelabelConfig = InstanceType<typeof def>;
+export type Variants = "def";
+
+class Whitelabel implements Record<Variants, WhitelabelConfig> {
+  public get def(): WhitelabelConfig {
+    const VariantConfig = require("./def.generated").default;
+    return new VariantConfig();
+  }
+}
+
+export default new Whitelabel()[__current];
+
+
+--- tsconfig.json ---
+{
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "paths": {}
+  }
+}
+
+
+--- whitelabel.config.json ---
+{
+  "src": "app/",
+  "patterns": ["**/*.tsx", "**/*.ts"],
+  "output_dir": "whitelabel",
+  "default_target": "def",
+  "tsconfig": "tsconfig.json"
+}

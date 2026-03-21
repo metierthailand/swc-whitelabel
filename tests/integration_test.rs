@@ -1,11 +1,10 @@
 #[cfg(test)]
 mod tests {
-    use biome_formatter::{IndentStyle, IndentWidth, LineWidth};
+    use biome_formatter::{IndentStyle, IndentWidth};
     use biome_js_formatter::{context::JsFormatOptions, format_node};
     use biome_js_parser::{JsParserOptions, parse};
     use biome_js_syntax::JsFileSource;
     use insta::assert_snapshot;
-    use std::ffi::OsStr;
     use std::fs;
     use std::path::{Path, PathBuf};
     use tempfile::TempDir;

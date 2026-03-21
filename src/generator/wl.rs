@@ -29,7 +29,7 @@ fn format_doc(entry: &WhitelabelEntry, current_dir: &PathBuf) -> String {
 * ```tsx
 {}
 * ```
-* 
+*
 */
 "#,
         entry.target.as_deref().unwrap_or_default(),
@@ -63,26 +63,34 @@ pub fn generate(entries: &Vec<&collector::WhitelabelEntry>, is_default: bool) ->
     for entry in &sorted_entries {
         let relative_import = to_rel_import(&current_dir, entry);
         output.push_str(&format!(
-            "import {{ {} }} from \"{}\";\n",
+            "import type {{ {} }} from \"{}\";\n",
             entry.symbol,
             relative_import.to_string_lossy()
         ));
     }
 
-    output.push_str("\nconst whitelabel = {\n");
-    for entry in &sorted_entries {
-        output.push_str(&format_doc(entry, &current_dir));
-        if entry.symbol == entry.key {
-            output.push_str(&format!("  {},\n", entry.symbol));
-        } else {
-            output.push_str(&format!("  {}: {},\n", entry.key, entry.symbol))
-        }
-    }
     output.push_str(if !is_default {
-        "} satisfies WhitelabelConfig;\n\nexport default whitelabel;\n"
+        "\nexport class whitelabel implements WhitelabelConfig {\n"
     } else {
-        "};\n\nexport default whitelabel;\n"
+        "\nexport class whitelabel {\n"
     });
+    for entry in &sorted_entries {
+        let relative_import = to_rel_import(&current_dir, entry);
+
+        output.push_str(&format_doc(entry, &current_dir));
+        output.push_str(&format!(
+            r#"public get {}(): typeof {} {{
+                return require('{}').{}
+              }}
+          "#,
+            entry.key,
+            entry.symbol,
+            relative_import.to_string_lossy(),
+            entry.symbol
+        ));
+    }
+
+    output.push_str("};\n\nexport default whitelabel;\n");
 
     output
 }
