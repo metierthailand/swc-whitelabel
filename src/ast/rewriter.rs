@@ -47,8 +47,8 @@ impl VisitMut for WhitelabelRewriter {
 
     fn visit_mut_expr(&mut self, expr: &mut Expr) {
         expr.visit_mut_children_with(self);
-        if let Expr::Ident(ident) = expr {
-            if let Some(wl_key) = self.target_ids.get(&ident.to_id()) {
+        if let Expr::Ident(ident) = expr
+            && let Some(wl_key) = self.target_ids.get(&ident.to_id()) {
                 *expr = Expr::Member(MemberExpr {
                     span: ident.span,
                     obj: Box::new(Expr::Ident(Ident::new(
@@ -60,14 +60,13 @@ impl VisitMut for WhitelabelRewriter {
                 });
                 self.has_modified = true;
             }
-        }
     }
 
     // Handles shorthand properties (e.g., `{ seedData }` -> `{ seedData: whitelabel.seedData }`)
     fn visit_mut_prop(&mut self, prop: &mut Prop) {
         prop.visit_mut_children_with(self);
-        if let Prop::Shorthand(ident) = prop {
-            if let Some(wl_key) = self.target_ids.get(&ident.to_id()) {
+        if let Prop::Shorthand(ident) = prop
+            && let Some(wl_key) = self.target_ids.get(&ident.to_id()) {
                 *prop = Prop::KeyValue(KeyValueProp {
                     key: PropName::Ident(IdentName::new(ident.sym.clone(), DUMMY_SP)),
                     value: Box::new(Expr::Member(MemberExpr {
@@ -82,13 +81,12 @@ impl VisitMut for WhitelabelRewriter {
                 });
                 self.has_modified = true;
             }
-        }
     }
 
     fn visit_mut_jsx_opening_element(&mut self, node: &mut JSXOpeningElement) {
         node.visit_mut_children_with(self);
-        if let JSXElementName::Ident(ident) = &node.name {
-            if let Some(wl_key) = self.target_ids.get(&ident.to_id()) {
+        if let JSXElementName::Ident(ident) = &node.name
+            && let Some(wl_key) = self.target_ids.get(&ident.to_id()) {
                 node.name = JSXElementName::JSXMemberExpr(JSXMemberExpr {
                     span: ident.span,
                     obj: JSXObject::Ident(Ident::new(
@@ -100,13 +98,12 @@ impl VisitMut for WhitelabelRewriter {
                 });
                 self.has_modified = true;
             }
-        }
     }
 
     fn visit_mut_program(&mut self, program: &mut Program) {
         program.visit_mut_children_with(self);
-        if self.has_modified {
-            if let Program::Module(module) = program {
+        if self.has_modified
+            && let Program::Module(module) = program {
                 let current_filename: PathBuf = self
                     .source_map
                     .lookup_char_pos(module.span.lo)
@@ -147,6 +144,5 @@ impl VisitMut for WhitelabelRewriter {
 
                 module.body.insert(insert_idx, import_decl);
             }
-        }
     }
 }

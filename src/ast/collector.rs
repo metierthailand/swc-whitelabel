@@ -97,8 +97,8 @@ impl<'a> Visit for WhitelabelCollector<'a> {
         {
             match &export.decl {
                 Decl::Var(var_decl) => {
-                    if let Some(decl) = var_decl.decls.first() {
-                        if let Pat::Ident(ident) = &decl.name {
+                    if let Some(decl) = var_decl.decls.first()
+                        && let Pat::Ident(ident) = &decl.name {
                             let symbol = ident.id.sym.to_string();
                             let final_key = key.clone().unwrap_or_else(|| symbol.clone());
 
@@ -116,7 +116,6 @@ impl<'a> Visit for WhitelabelCollector<'a> {
                                 });
                             }
                         }
-                    }
                 }
                 Decl::Fn(fn_decl) => {
                     let symbol = fn_decl.ident.sym.to_string();
@@ -140,14 +139,14 @@ impl<'a> Visit for WhitelabelCollector<'a> {
 
                     let rel_path = config::with_config(|cfg| {
                         util::compute_relative_import(
-                            PathBuf::from(cfg.cwd.clone()).as_path(),
+                            cfg.cwd.clone().as_path(),
                             PathBuf::from(self.get_filename(export.span)).as_path(),
                         )
                     });
 
                     self.errors.push(format!(
                         "Unsupported export declaration for whitelabel {} @{}",
-                        rel_path.unwrap().to_string(),
+                        rel_path.unwrap(),
                         loc.line
                     ))
                 }
@@ -161,14 +160,14 @@ impl<'a> Visit for WhitelabelCollector<'a> {
         if self.get_whitelabel_target_and_key(export.span).is_some() {
             let rel_path = config::with_config(|cfg| {
                 util::compute_relative_import(
-                    PathBuf::from(cfg.cwd.clone()).as_path(),
+                    cfg.cwd.clone().as_path(),
                     PathBuf::from(self.get_filename(export.span)).as_path(),
                 )
             });
             self.errors.push(format!(
                 "File {} contains a whitelabel directive on a named export block. \
                 This is not supported in v1. Use direct inline exports.",
-                rel_path.unwrap().to_string()
+                rel_path.unwrap()
             ));
         }
         export.visit_children_with(self);

@@ -111,7 +111,7 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
                 continue;
             }
 
-            let fm = cm.load_file(&path)?;
+            let fm = cm.load_file(path)?;
 
             let lexer = Lexer::new(
                 Syntax::Typescript(TsSyntax {
@@ -160,8 +160,8 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
                 entry.target = Some(cfg.default_target.clone());
             }
 
-            if let Some(prev_key) = existing_whitelabel_scanner.symbol_to_key.get(&entry.symbol) {
-                if prev_key != &entry.key
+            if let Some(prev_key) = existing_whitelabel_scanner.symbol_to_key.get(&entry.symbol)
+                && prev_key != &entry.key
                     && entry.target.as_deref() == Some(cfg.default_target.as_str())
                 {
                     report(|| {
@@ -172,7 +172,6 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
                     });
                     rename_map.insert(prev_key.clone(), entry.key.clone());
                 }
-            }
             report(|| {
                 println!(
                     "\t🪡 ({}) found {} @ {}",
@@ -211,7 +210,7 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
         fs::write(
             &target_path,
             generator::index::generate(
-                grouped_entries.iter().map(|(target, _)| target).collect(),
+                grouped_entries.keys().collect(),
                 cfg.default_target.clone(),
             ),
         )?;

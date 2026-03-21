@@ -4,28 +4,22 @@ use swc_core::ecma::{
     visit::{Visit, VisitWith},
 };
 
+#[derive(Default)]
 pub struct WhitelabelScanner {
     /// Maps the original exported symbol to its old whitelabel key
     /// e.g., "thDescriptionText" -> "blog_thDescriptionText"
     pub symbol_to_key: HashMap<String, String>,
 }
 
-impl Default for WhitelabelScanner {
-    fn default() -> Self {
-        Self {
-            symbol_to_key: HashMap::new(),
-        }
-    }
-}
 
 impl Visit for WhitelabelScanner {
     fn visit_var_declarator(&mut self, decl: &VarDeclarator) {
         // 1. Check if the variable being declared is exactly "whitelabel"
-        if let Pat::Ident(ident) = &decl.name {
-            if ident.id.sym == *"whitelabel" {
+        if let Pat::Ident(ident) = &decl.name
+            && ident.id.sym == *"whitelabel" {
                 // 2. Ensure it is initialized with an Object Literal: `{ ... }`
-                if let Some(init) = &decl.init {
-                    if let Expr::Object(obj) = &**init {
+                if let Some(init) = &decl.init
+                    && let Expr::Object(obj) = &**init {
                         // 3. Loop through all properties inside the object
                         for prop_or_spread in &obj.props {
                             if let PropOrSpread::Prop(prop) = prop_or_spread {
@@ -66,9 +60,7 @@ impl Visit for WhitelabelScanner {
                             }
                         }
                     }
-                }
             }
-        }
         // Continue visiting other declarations just in case
         decl.visit_children_with(self);
     }

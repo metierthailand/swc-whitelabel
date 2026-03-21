@@ -32,7 +32,7 @@ fn format_doc(entry: &WhitelabelEntry, current_dir: &PathBuf) -> String {
 */
 "#,
         entry.target.as_deref().unwrap_or_default(),
-        to_rel_import(&current_dir, entry).to_string_lossy(),
+        to_rel_import(current_dir, entry).to_string_lossy(),
         entry.symbol,
         entry
             ._experiment_remark

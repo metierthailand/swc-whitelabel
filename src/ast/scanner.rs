@@ -103,7 +103,7 @@ impl<'a> SymbolScanner<'a> {
                 if import_src.starts_with(prefix) && import_src.ends_with(suffix) {
                     let match_len = prefix.len() + suffix.len();
                     // TypeScript Rule: Longest prefix match wins!
-                    if best_match.map_or(true, |best| match_len > best.2) {
+                    if best_match.is_none_or(|best| match_len > best.2) {
                         best_match = Some((pattern, mapped_paths, match_len));
                     }
                 }
@@ -151,17 +151,14 @@ impl<'a> Visit for SymbolScanner<'a> {
                                 self.current_file_name.as_ref().unwrap().to_string().into(),
                                 import_src,
                             );
-                            lazy_resolved_path.as_ref().expect(
-                                format!("Can't resolve path for {:?}", self.current_file_name)
-                                    .as_str(),
-                            )
+                            lazy_resolved_path.as_ref().unwrap_or_else(|| panic!("Can't resolve path for {:?}", self.current_file_name))
                         }
                     };
 
                     if let Some(entry) =
                         entries
                             .iter()
-                            .find(|entry| match fs::canonicalize(&resolved_path) {
+                            .find(|entry| match fs::canonicalize(resolved_path) {
                                 Ok(abs_resolved_path) => {
                                     let absolute_import_path = config::with_config(|cfg| {
                                         cfg.cwd.join(&cfg.src).join(&entry.import_path)
@@ -190,7 +187,7 @@ impl<'a> Visit for SymbolScanner<'a> {
                             println!(
                                 "\t 📡 (📦) {} @ {}",
                                 entry.key,
-                                self.current_file_name.as_ref().unwrap().to_string()
+                                self.current_file_name.as_ref().unwrap()
                             )
                         });
                         self.target_ids
@@ -216,7 +213,7 @@ impl<'a> Visit for SymbolScanner<'a> {
                 println!(
                     "\t 📡 (🏠) {} @ {}",
                     entry.key,
-                    self.current_file_name.as_ref().unwrap().to_string()
+                    self.current_file_name.as_ref().unwrap()
                 )
             });
             self.target_ids.insert(ident.id.to_id(), entry.key.clone());

@@ -45,7 +45,7 @@ pub fn exec(
             continue;
         }
 
-        let fm = cm.load_file(&path)?;
+        let fm = cm.load_file(path)?;
         let comments = SingleThreadedComments::default();
         let lexer = Lexer::new(
             Syntax::Typescript(TsSyntax {
@@ -94,7 +94,7 @@ pub fn exec(
                 wr: JsWriter::new(cm.clone(), "\n", &mut buf, None),
             };
             emitter.emit_program(&program)?;
-            fs::write(&path, String::from_utf8(buf)?)?;
+            fs::write(path, String::from_utf8(buf)?)?;
             modified_files.push(path.to_string_lossy().to_string());
 
             report(|| {
