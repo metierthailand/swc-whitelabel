@@ -1,7 +1,7 @@
 ### 🚨 P0: The "Do No Harm" Release (Fixing Corruption & Crashes)
 **Goal:** Guarantee that running `wl-extractor` will *never* break a working application, either at compile-time or runtime.
 
-* **1. ES Module Circular Dependencies (Runtime App Crash):** If our codemod forces a top-level read of an uninitialized lexical binding, the ES Module loader throws a `ReferenceError`. We must output cyclic-safe code (e.g., getter functions).
+* **1. ✅ ES Module Circular Dependencies (Runtime App Crash):** If our codemod forces a top-level read of an uninitialized lexical binding, the ES Module loader throws a `ReferenceError`. We must output cyclic-safe code (e.g., getter functions).
 * **2. Idempotency (Double-writes):** Running the tool twice must yield the exact same file state. No duplicate `import whitelabel from...` injections.
 * **3. Optional `compilerOptions.paths`:** Many valid TypeScript projects don't use `paths`. The tool currently crashes via `expect("Failed to load tsconfig.json")` if this is missing. It must default to an empty map instead of panicking.
 * **4. Graceful Unresolved Imports:** Right now, one bad/unresolvable import causes an `expect()` panic that aborts the entire codemod. Unresolved imports should log a warning and be skipped, not crash the binary.
@@ -24,7 +24,7 @@
 ### 🛠️ P3: The "Engineering Rigor" Release (Tech Debt & CI)
 **Goal:** Make the codebase a joy to contribute to and mathematically proven to work.
 
-* **12. Destroy the Global `OnceLock`:** Refactor `src/config/config.rs`. Passing a `&WhitelabelConfig` context down the pipeline eliminates the testability trap and allows for concurrent test runners.
+* **12. ✅ Destroy the Global `OnceLock`:** Refactor `src/config/config.rs`. Passing a `&WhitelabelConfig` context down the pipeline eliminates the testability trap and allows for concurrent test runners.
 * **13. CI/CD Hardening:** Update GitHub Actions to include `cargo fmt --check`, `cargo clippy -- -D warnings`, and a release build verification.
 * **14. Comprehensive E2E Tests:** Expand `tests/integration_test.rs` to cover alias-heavy imports, malformed configs, self-closing JSX, and unresolved imports.
 
