@@ -116,9 +116,7 @@ impl VisitMut for WhitelabelRewriter {
                     .into();
 
                 let abs_out_dir = config::with_config(|config| {
-                    let mut abs_out_dir = config.cwd.clone();
-                    abs_out_dir.push(format!("{}{}", &config.src, &config.output_dir));
-                    abs_out_dir
+                    config.cwd.join(&config.src).join(&config.output_dir)
                 });
 
                 let import_decl = ModuleItem::ModuleDecl(ModuleDecl::Import(ImportDecl {

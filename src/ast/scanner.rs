@@ -163,12 +163,16 @@ impl<'a> Visit for SymbolScanner<'a> {
                             .iter()
                             .find(|entry| match fs::canonicalize(&resolved_path) {
                                 Ok(abs_resolved_path) => {
-                                    let match_exact = match fs::canonicalize(&entry.import_path) {
+                                    let absolute_import_path = config::with_config(|cfg| {
+                                        cfg.cwd.join(&cfg.src).join(&entry.import_path)
+                                    });
+                                    let match_exact = match fs::canonicalize(&absolute_import_path)
+                                    {
                                         Ok(path) => path == abs_resolved_path,
                                         _ => true,
                                     };
 
-                                    let match_parent = match fs::canonicalize(&entry.import_path)
+                                    let match_parent = match fs::canonicalize(&absolute_import_path)
                                         .map(|pb| pb.parent().map(|parent| parent.to_path_buf()))
                                     {
                                         Ok(parent) => {
@@ -202,8 +206,10 @@ impl<'a> Visit for SymbolScanner<'a> {
             && let name = ident.id.sym.to_string()
             && let Some(entries) = self.global_symbols.get(&name)
             && let Some(entry) = entries.iter().find(|e| {
+                let absolute_import_path =
+                    config::with_config(|cfg| cfg.cwd.join(&cfg.src).join(&e.import_path));
                 fs::canonicalize(self.current_file_name.as_ref().unwrap().to_string()).unwrap()
-                    == fs::canonicalize(&e.import_path).unwrap()
+                    == fs::canonicalize(&absolute_import_path).unwrap()
             })
         {
             report(|| {
