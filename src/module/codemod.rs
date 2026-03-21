@@ -77,11 +77,7 @@ pub fn exec(
             continue;
         }
 
-        let mut rewriter = WhitelabelRewriter {
-            source_map: cm.clone(),
-            target_ids: scanner.target_ids,
-            has_modified: false,
-        };
+        let mut rewriter = WhitelabelRewriter::new(cm.clone(), scanner.target_ids, false);
         program.visit_mut_with(&mut rewriter);
 
         if rewriter.has_modified {

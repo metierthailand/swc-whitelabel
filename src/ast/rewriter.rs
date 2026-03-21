@@ -13,11 +13,24 @@ pub struct WhitelabelRewriter {
     pub source_map: Lrc<SourceMap>,
     pub target_ids: HashMap<Id, String>,
     pub has_modified: bool,
+    jsx_stack: Vec<JSXElementName>,
 }
 
 const KEYWORD: &[u8] = b"whitelabel";
 
 impl WhitelabelRewriter {
+    pub fn new(
+        source_map: Lrc<SourceMap>,
+        target_ids: HashMap<Id, String>,
+        has_modified: bool,
+    ) -> Self {
+        Self {
+            source_map,
+            target_ids,
+            has_modified,
+            jsx_stack: vec![],
+        }
+    }
     fn find_insert_idx(&self, module: &Module) -> Option<usize> {
         module.body.iter().try_fold(0, |prev, item| {
             if let ModuleItem::Stmt(Stmt::Expr(expr_stmt)) = item
@@ -98,7 +111,21 @@ impl VisitMut for WhitelabelRewriter {
                 )),
                 prop: IdentName::new(wl_key.clone().into(), DUMMY_SP),
             });
+
             self.has_modified = true;
+            if !node.self_closing {
+                self.jsx_stack.push(node.name.clone())
+            }
+        }
+    }
+
+    fn visit_mut_jsx_closing_element(&mut self, node: &mut JSXClosingElement) {
+        node.visit_mut_children_with(self);
+        if let JSXElementName::Ident(ident) = &node.name
+            && let Some(_) = self.jsx_stack.last()
+            && self.target_ids.contains_key(&ident.to_id())
+        {
+            node.name = self.jsx_stack.pop().unwrap()
         }
     }
 

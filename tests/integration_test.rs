@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests {
-    use biome_formatter::{IndentStyle, IndentWidth};
+    use biome_formatter::{IndentStyle, IndentWidth, LineWidth};
+    use biome_js_formatter::context::BracketSameLine;
     use biome_js_formatter::{context::JsFormatOptions, format_node};
     use biome_js_parser::{JsParserOptions, parse};
     use biome_js_syntax::JsFileSource;
@@ -64,7 +65,9 @@ mod tests {
 
                                 let format_options = JsFormatOptions::new(JsFileSource::tsx())
                                     .with_indent_style(IndentStyle::Space)
-                                    .with_indent_width(IndentWidth::from(2));
+                                    .with_indent_width(IndentWidth::from(2))
+                                    .with_line_width(LineWidth::try_from(LineWidth::MAX).unwrap())
+                                    .with_bracket_same_line(BracketSameLine::from(true));
 
                                 //  Run the formatter on the parsed syntax tree
                                 let formatted = format_node(format_options, &parsed.syntax())
@@ -73,7 +76,9 @@ mod tests {
                                 //  Print the formatted tree back into a standard Rust String
                                 let printed = formatted.print().expect("Failed to print code");
 
-                                printed.into_code()
+                                let code = printed.into_code();
+                                // let _ = fs::write(entry.path(), &code);
+                                code
                             } else {
                                 content
                             }
