@@ -129,5 +129,11 @@ mod tests {
 
         // We pass `fixture_name` so insta names the snapshot file correctly!
         assert_snapshot!(fixture_name.to_string(), final_output);
+
+        // Idempotent test
+
+        let _ = wl_extractor::run::run(Some(workspace.path().to_path_buf()));
+        let idempt_output = workspace.snapshot_results();
+        assert_snapshot!(fixture_name.to_string(), idempt_output);
     }
 }
