@@ -1,0 +1,255 @@
+---
+source: tests/integration_test.rs
+expression: idempt_output
+---
+--- src/index.tsx ---
+import whitelabel from "./whitelabel";
+import React from "react";
+const _Heading: React.FC = ({ children }) => <h1>{children}</h1>;
+// whitelabel key=Heading
+export const Heading = _Heading;
+const _Layout: React.FC = ({ children }) => <div className="bg-red-500">{children}</div>;
+// whitelabel
+export const Layout = _Layout;
+const _Footer: React.FC = () => <p>Contact Us!</p>;
+// whitelabel
+export const Footer = _Footer;
+const _Button: React.FC = ({ children }) => <button>{children}</button>;
+// whitelabel
+export const Button = _Button;
+const App = () => (
+  <whitelabel.Layout>
+    <whitelabel.Heading>
+      Hello, World! <whitelabel.Button>Click me!</whitelabel.Button>
+    </whitelabel.Heading>
+
+    <whitelabel.Footer />
+  </whitelabel.Layout>
+);
+
+
+--- src/whitelabel/def.generated.tsx ---
+/* eslint-disable @typescript-eslint/no-require-imports */
+
+// AUTO-GENERATED: DO NOT EDIT
+
+import type { Button } from "../index";
+import type { Footer } from "../index";
+import type { Heading } from "../index";
+import type { Layout } from "../index";
+
+export class whitelabel {
+  /**
+   * ### 🏷️ Tenant: `def`
+   *
+   * **from `../index`**
+   *
+   * Go to {@link Button | implementation}.
+   * @default
+   * ```tsx
+   * _Button
+   * ```
+   *
+   */
+  public get Button(): typeof Button {
+    return require("../index").Button;
+  }
+  /**
+   * ### 🏷️ Tenant: `def`
+   *
+   * **from `../index`**
+   *
+   * Go to {@link Footer | implementation}.
+   * @default
+   * ```tsx
+   * _Footer
+   * ```
+   *
+   */
+  public get Footer(): typeof Footer {
+    return require("../index").Footer;
+  }
+  /**
+   * ### 🏷️ Tenant: `def`
+   *
+   * **from `../index`**
+   *
+   * Go to {@link Heading | implementation}.
+   * @default
+   * ```tsx
+   * _Heading
+   * ```
+   *
+   */
+  public get Heading(): typeof Heading {
+    return require("../index").Heading;
+  }
+  /**
+   * ### 🏷️ Tenant: `def`
+   *
+   * **from `../index`**
+   *
+   * Go to {@link Layout | implementation}.
+   * @default
+   * ```tsx
+   * _Layout
+   * ```
+   *
+   */
+  public get Layout(): typeof Layout {
+    return require("../index").Layout;
+  }
+}
+
+export default whitelabel;
+
+
+--- src/whitelabel/determine-whitelabel.ts ---
+// THIS MODULE IS FOR CUSTOM LOGIC TO DETERMINE CURRENT WHITELABEL
+// TODO: possibility for HTTP per-request whitelabel
+
+import type { Variants } from ".";
+
+const currentWhitelabel = (process.env.NEXT_PUBLIC_WHITELABEL as Variants) || "def";
+
+// ! exported result must be `satisfies Variants`
+export default currentWhitelabel satisfies Variants;
+
+
+--- src/whitelabel/index.ts ---
+/* eslint-disable @typescript-eslint/no-require-imports */
+// AUTO-GENERATED: DO NOT EDIT
+import __current from "./determine-whitelabel";
+import type def from "./def.generated";
+import type mar from "./mar.generated";
+export type WhitelabelConfig = InstanceType<typeof def>;
+export type Variants = "def" | "mar";
+
+class Whitelabel implements Record<Variants, WhitelabelConfig> {
+  public get def(): WhitelabelConfig {
+    const VariantConfig = require("./def.generated").default;
+    return new VariantConfig();
+  }
+  public get mar(): WhitelabelConfig {
+    const VariantConfig = require("./mar.generated").default;
+    return new VariantConfig();
+  }
+}
+
+export default new Whitelabel()[__current];
+
+
+--- src/whitelabel/mar.generated.tsx ---
+/* eslint-disable @typescript-eslint/no-require-imports */
+
+// AUTO-GENERATED: DO NOT EDIT
+
+import type { WhitelabelConfig } from ".";
+import type { Button } from "../wl.mar";
+import type { Footer } from "../wl.mar";
+import type { MarHeading } from "../wl.mar";
+import type { Layout } from "../wl.mar";
+
+export class whitelabel implements WhitelabelConfig {
+  /**
+   * ### 🏷️ Tenant: `mar`
+   *
+   * **from `../wl.mar`**
+   *
+   * Go to {@link Button | implementation}.
+   * @default
+   * ```tsx
+   * ({ children }) => (
+   *   <button className="text-lg">{children}</button>
+   * )
+   * ```
+   *
+   */
+  public get Button(): typeof Button {
+    return require("../wl.mar").Button;
+  }
+  /**
+   * ### 🏷️ Tenant: `mar`
+   *
+   * **from `../wl.mar`**
+   *
+   * Go to {@link Footer | implementation}.
+   * @default
+   * ```tsx
+   * () => <p>Contact Them!</p>
+   * ```
+   *
+   */
+  public get Footer(): typeof Footer {
+    return require("../wl.mar").Footer;
+  }
+  /**
+   * ### 🏷️ Tenant: `mar`
+   *
+   * **from `../wl.mar`**
+   *
+   * Go to {@link MarHeading | implementation}.
+   * @default
+   * ```tsx
+   * ({ children }) => <h2>{children}</h2>
+   * ```
+   *
+   */
+  public get Heading(): typeof MarHeading {
+    return require("../wl.mar").MarHeading;
+  }
+  /**
+   * ### 🏷️ Tenant: `mar`
+   *
+   * **from `../wl.mar`**
+   *
+   * Go to {@link Layout | implementation}.
+   * @default
+   * ```tsx
+   * ({ children }) => (
+   *   <div className="bg-green-500">{children}</div>
+   * )
+   * ```
+   *
+   */
+  public get Layout(): typeof Layout {
+    return require("../wl.mar").Layout;
+  }
+}
+
+export default whitelabel;
+
+
+--- src/wl.mar.tsx ---
+import React from "react";
+
+// whitelabel for=mar, key=Heading
+export const MarHeading: React.FC = ({ children }) => <h2>{children}</h2>;
+
+// whitelabel for=mar
+export const Layout: React.FC = ({ children }) => <div className="bg-green-500">{children}</div>;
+
+// whitelabel for=mar
+export const Footer: React.FC = () => <p>Contact Them!</p>;
+
+// whitelabel for=mar
+export const Button: React.FC = ({ children }) => <button className="text-lg">{children}</button>;
+
+
+--- tsconfig.json ---
+{
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "paths": {}
+  }
+}
+
+
+--- whitelabel.config.json ---
+{
+  "src": "src/",
+  "patterns": ["**/*.tsx", "**/*.ts"],
+  "output_dir": "whitelabel",
+  "default_target": "def",
+  "tsconfig": "tsconfig.json"
+}
