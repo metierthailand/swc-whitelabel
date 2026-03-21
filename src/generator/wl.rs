@@ -47,9 +47,9 @@ fn format_doc(entry: &WhitelabelEntry, current_dir: &PathBuf) -> String {
 pub fn generate(entries: &Vec<&collector::WhitelabelEntry>, is_default: bool) -> String {
     let mut output = String::new();
     output.push_str(if !is_default {
-        "// AUTO-GENERATED: DO NOT EDIT\n\nimport type { WhitelabelConfig } from '.';\n"
+        "/* eslint-disable @typescript-eslint/no-require-imports */\n\n// AUTO-GENERATED: DO NOT EDIT\n\nimport type { WhitelabelConfig } from '.';\n"
     } else {
-        "// AUTO-GENERATED: DO NOT EDIT\n\n"
+        "/* eslint-disable @typescript-eslint/no-require-imports */\n\n// AUTO-GENERATED: DO NOT EDIT\n\n"
     });
 
     let mut sorted_entries: Vec<&WhitelabelEntry> = entries.to_vec();

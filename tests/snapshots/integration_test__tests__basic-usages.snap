@@ -32,6 +32,8 @@ export const Heading: FC = () => <h1>Variant1 Heading</h1>;
 
 
 --- app/whitelabel/def.generated.tsx ---
+/* eslint-disable @typescript-eslint/no-require-imports */
+
 // AUTO-GENERATED: DO NOT EDIT
 
 import type { bgClassname } from "../home/page";
@@ -110,6 +112,8 @@ export default new Whitelabel()[__current];
 
 
 --- app/whitelabel/variant1.generated.tsx ---
+/* eslint-disable @typescript-eslint/no-require-imports */
+
 // AUTO-GENERATED: DO NOT EDIT
 
 import type { WhitelabelConfig } from ".";
