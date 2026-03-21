@@ -16,7 +16,7 @@ use swc_core::{
 use crate::ast::collector::{WhitelabelCollector, WhitelabelEntry};
 use crate::ast::rewriter::WhitelabelRewriter;
 use crate::ast::scanner::SymbolScanner;
-use crate::config::{config, tsconfig};
+use crate::config::{env, tsconfig};
 use crate::util::report;
 
 pub fn exec(
@@ -26,8 +26,8 @@ pub fn exec(
 ) -> Result<Vec<String>> {
     let mut global_symbols: HashMap<String, Vec<WhitelabelEntry>> = HashMap::new();
     let mut modified_files: Vec<String> = Vec::new();
-    let ts_cfg = config::with_config(|cfg| tsconfig::load(cfg.tsconfig.clone()))?;
-    let output_dir = config::with_config(|cfg| cfg.output_dir.clone());
+    let ts_cfg = env::with_config(|cfg| tsconfig::load(cfg.tsconfig.clone()))?;
+    let output_dir = env::with_config(|cfg| cfg.output_dir.clone());
 
     // 🎯 IDIOMATIC: Consuming the iterator (Value Move)
     for entry in collector.entries.into_iter() {

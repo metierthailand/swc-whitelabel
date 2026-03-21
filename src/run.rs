@@ -35,11 +35,11 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
 
     let globals = Globals::new();
 
-    let Ok(_) = config::config::init(cwd, "whitelabel.config.json") else {
+    let Ok(_) = config::env::init(cwd, "whitelabel.config.json") else {
         panic!("Failed to load config");
     };
 
-    let cfg = config::config::with_config(|c| c.clone());
+    let cfg = config::env::with_config(|c| c.clone());
 
     let report_modified_files = create_reporter(|c| c.output_file_name_only);
 

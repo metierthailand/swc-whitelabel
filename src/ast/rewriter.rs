@@ -6,7 +6,7 @@ use swc_core::ecma::{
     visit::{VisitMut, VisitMutWith, noop_visit_mut_type},
 };
 
-use crate::config::config;
+use crate::config::env;
 use crate::util::{self};
 
 pub struct WhitelabelRewriter {
@@ -143,7 +143,7 @@ impl VisitMut for WhitelabelRewriter {
                 .into();
 
             let abs_out_dir =
-                config::with_config(|config| config.cwd.join(&config.src).join(&config.output_dir));
+                env::with_config(|config| config.cwd.join(&config.src).join(&config.output_dir));
 
             let Some(rel_import) = current_filename
                 .as_path()

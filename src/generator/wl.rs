@@ -2,13 +2,13 @@ use std::path::{Path, PathBuf};
 
 use crate::{
     ast::collector::{self, WhitelabelEntry},
-    config::config,
+    config::env,
     util,
 };
 
 fn to_rel_import(current_dir: &Path, entry: &WhitelabelEntry) -> PathBuf {
     let absolute_target =
-        config::with_config(|cfg| cfg.cwd.join(&cfg.src).join(&entry.import_path));
+        env::with_config(|cfg| cfg.cwd.join(&cfg.src).join(&entry.import_path));
 
     match util::compute_relative_import(current_dir, &absolute_target) {
         Some(s) => PathBuf::from(s).with_extension(""),
@@ -54,7 +54,7 @@ pub fn generate(entries: &Vec<&collector::WhitelabelEntry>, is_default: bool) ->
     let mut sorted_entries: Vec<&WhitelabelEntry> = entries.to_vec();
     sorted_entries.sort_by_key(|e| &e.key);
 
-    let current_dir = config::with_config(|cfg| cfg.cwd.join(&cfg.src).join(&cfg.output_dir));
+    let current_dir = env::with_config(|cfg| cfg.cwd.join(&cfg.src).join(&cfg.output_dir));
 
     for entry in &sorted_entries {
         let relative_import = to_rel_import(&current_dir, entry);

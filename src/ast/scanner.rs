@@ -9,7 +9,7 @@ use swc_core::ecma::{
 };
 
 use crate::ast::collector::WhitelabelEntry;
-use crate::config::config;
+use crate::config::env;
 use crate::util::report;
 
 // Scans the file for imports or local declarations that match known whitelabel symbols
@@ -39,7 +39,7 @@ impl<'a> SymbolScanner<'a> {
     /// Resolves an import string into an absolute physical file path
     /// Fully respects relative imports and tsconfig.json `paths` aliases.
     fn resolve_import(&self, current_file_path: PathBuf, import_src: &str) -> Option<PathBuf> {
-        let cwd = config::with_config(|cfg| cfg.cwd.clone());
+        let cwd = env::with_config(|cfg| cfg.cwd.clone());
         let mut base_paths_to_try = Vec::new();
 
         // 🎯 CATEGORY 1: Relative Import (Bypasses TS paths)
@@ -175,7 +175,7 @@ impl<'a> Visit for SymbolScanner<'a> {
                             .iter()
                             .find(|entry| match fs::canonicalize(resolved_path) {
                                 Ok(abs_resolved_path) => {
-                                    let absolute_import_path = config::with_config(|cfg| {
+                                    let absolute_import_path = env::with_config(|cfg| {
                                         cfg.cwd.join(&cfg.src).join(&entry.import_path)
                                     });
                                     let match_exact = match fs::canonicalize(&absolute_import_path)
@@ -217,7 +217,7 @@ impl<'a> Visit for SymbolScanner<'a> {
             && let Some(entries) = self.global_symbols.get(&name)
             && let Some(entry) = entries.iter().find(|e| {
                 let absolute_import_path =
-                    config::with_config(|cfg| cfg.cwd.join(&cfg.src).join(&e.import_path));
+                    env::with_config(|cfg| cfg.cwd.join(&cfg.src).join(&e.import_path));
 
                 // FIXME: There can be case where None = None
                 self.current_file_name

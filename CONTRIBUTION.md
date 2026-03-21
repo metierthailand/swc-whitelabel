@@ -39,7 +39,7 @@ We ruthlessly prioritize our backlog based on **Blast Radius and Risk Mitigation
 **Goal:** Make the codebase a joy to contribute to and mathematically proven to work.
 
 * [x] **12. Destroy the Global `OnceLock`:** Refactor `src/config/config.rs`. Passing a `&WhitelabelConfig` context down the pipeline eliminates the testability trap and allows for concurrent test runners.
-* [ ] **13. CI/CD Hardening:** Update GitHub Actions to include `cargo fmt --check`, `cargo clippy -- -D warnings`, and a release build verification.
+* [x] **13. CI/CD Hardening:** Update GitHub Actions to include `cargo fmt --check`, `cargo clippy -- -D warnings`, and a release build verification.
 * [ ] **14. Comprehensive E2E Tests:** Expand `tests/integration_test.rs` to cover alias-heavy imports, malformed configs, self-closing JSX, and unresolved imports.
 
 ### 🎨 P4: The "Documentation & Polish" Release

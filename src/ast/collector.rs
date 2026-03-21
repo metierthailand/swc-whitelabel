@@ -13,7 +13,7 @@ use swc_core::{
     },
 };
 
-use crate::{config::config, util};
+use crate::{config::env, util};
 
 #[derive(Clone)]
 struct WhitelabelDirective {
@@ -138,7 +138,7 @@ impl<'a> Visit for WhitelabelCollector<'a> {
                 _ => {
                     let loc = self.source_map.lookup_char_pos(export.span.lo);
 
-                    let rel_path = config::with_config(|cfg| {
+                    let rel_path = env::with_config(|cfg| {
                         util::compute_relative_import(
                             cfg.cwd.clone().as_path(),
                             PathBuf::from(self.get_filename(export.span)).as_path(),
@@ -159,7 +159,7 @@ impl<'a> Visit for WhitelabelCollector<'a> {
     // Fail loud on re-exports (e.g., `export { foo as companyName }`)
     fn visit_named_export(&mut self, export: &NamedExport) {
         if self.get_whitelabel_target_and_key(export.span).is_some() {
-            let rel_path = config::with_config(|cfg| {
+            let rel_path = env::with_config(|cfg| {
                 util::compute_relative_import(
                     cfg.cwd.clone().as_path(),
                     PathBuf::from(self.get_filename(export.span)).as_path(),
