@@ -6,18 +6,18 @@ pub fn report<F>(f: F) -> ()
 where
     F: FnOnce() -> (),
 {
-    let is_allowed = !config::get().output_file_name_only;
-    if is_allowed {
-        f()
-    };
+    config::with_config(|cfg| {
+        if !cfg.output_file_name_only {
+            f()
+        };
+    })
 }
 
 pub fn create_reporter<F>(pred: F) -> impl Fn(Box<dyn FnOnce()>) -> ()
 where
     F: FnOnce(&WhitelabelConfig) -> bool,
 {
-    let cfg = config::get();
-    let is_allowed = pred(cfg);
+    let is_allowed = config::with_config(|cfg| pred(cfg));
 
     move |f| {
         if is_allowed {

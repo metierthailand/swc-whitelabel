@@ -45,7 +45,6 @@ fn format_doc(entry: &WhitelabelEntry, current_dir: &PathBuf) -> String {
 }
 
 pub fn generate(entries: &Vec<&collector::WhitelabelEntry>, is_default: bool) -> String {
-    let cfg = config::get();
     let mut output = String::new();
     output.push_str(if !is_default {
         "// AUTO-GENERATED: DO NOT EDIT\n\nimport type { WhitelabelConfig } from '.';\n"
@@ -56,9 +55,13 @@ pub fn generate(entries: &Vec<&collector::WhitelabelEntry>, is_default: bool) ->
     let mut sorted_entries: Vec<&WhitelabelEntry> = entries.to_vec();
     sorted_entries.sort_by_key(|e| &e.key);
 
-    let mut current_dir = cfg.cwd.clone();
-    current_dir.push(&cfg.src);
-    current_dir.push(&cfg.output_dir);
+    let current_dir = config::with_config(|cfg| {
+        let mut current_dir = cfg.cwd.clone();
+        current_dir.push(&cfg.src);
+        current_dir.push(&cfg.output_dir);
+
+        current_dir
+    });
 
     for entry in &sorted_entries {
         let relative_import = to_rel_import(&current_dir, entry);

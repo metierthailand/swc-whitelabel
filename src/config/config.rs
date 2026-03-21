@@ -1,9 +1,9 @@
 use anyhow::{Context, Result};
 use serde::Deserialize;
-use std::{env, fs, path::PathBuf, sync::OnceLock};
+use std::{cell::RefCell, env, fs, path::PathBuf};
 
 // 1. Define the struct that perfectly mirrors your JSON
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct WhitelabelConfig {
     pub src: String,
     pub patterns: Vec<String>,
@@ -16,12 +16,8 @@ pub struct WhitelabelConfig {
     pub cwd: PathBuf,
 }
 
-pub static CONFIG: OnceLock<WhitelabelConfig> = OnceLock::new();
-
-pub fn get() -> &'static WhitelabelConfig {
-    CONFIG
-        .get()
-        .expect("FATAL: Tried to read config before it was initialized!")
+thread_local! {
+    static CONFIG: RefCell<Option<WhitelabelConfig>> = const { RefCell::new(None) };
 }
 
 pub fn init(cwd: Option<PathBuf>, config_filename: &str) -> Result<()> {
@@ -36,6 +32,8 @@ pub fn init(cwd: Option<PathBuf>, config_filename: &str) -> Result<()> {
         resolved_file.display()
     ))?;
 
+    println!("{}", resolved_file.to_string_lossy());
+
     // Deserialize the JSON string into our struct
     let mut config: WhitelabelConfig = serde_json::from_str(&config_str)
         .context("Failed to parse whitelabel.config.json. Is the JSON strictly valid?")?;
@@ -49,9 +47,22 @@ pub fn init(cwd: Option<PathBuf>, config_filename: &str) -> Result<()> {
     config.tsconfig = Some(resolved_tsconfig_path.to_string_lossy().to_string());
 
     // Lock the config into our global state. It can never be overwritten!
-    CONFIG
-        .set(config)
-        .map_err(|_| anyhow::anyhow!("Config was already initialized!"))?;
+    CONFIG.with(|c| {
+        *c.borrow_mut() = Some(config);
+    });
 
     Ok(())
+}
+
+pub fn with_config<F, R>(f: F) -> R
+where
+    F: FnOnce(&WhitelabelConfig) -> R,
+{
+    CONFIG.with(|c| {
+        let borrow = c.borrow();
+        let cfg = borrow
+            .as_ref()
+            .expect("FATAL: Config not initialized on this thread!");
+        f(cfg)
+    })
 }

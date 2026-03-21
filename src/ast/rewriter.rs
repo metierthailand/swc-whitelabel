@@ -107,7 +107,6 @@ impl VisitMut for WhitelabelRewriter {
         program.visit_mut_children_with(self);
         if self.has_modified {
             if let Program::Module(module) = program {
-                let config = config::get();
                 let current_filename: PathBuf = self
                     .source_map
                     .lookup_char_pos(module.span.lo)
@@ -116,8 +115,11 @@ impl VisitMut for WhitelabelRewriter {
                     .to_string()
                     .into();
 
-                let mut abs_out_dir = config.cwd.clone();
-                abs_out_dir.push(format!("{}{}", &config.src, &config.output_dir));
+                let abs_out_dir = config::with_config(|config| {
+                    let mut abs_out_dir = config.cwd.clone();
+                    abs_out_dir.push(format!("{}{}", &config.src, &config.output_dir));
+                    abs_out_dir
+                });
 
                 let import_decl = ModuleItem::ModuleDecl(ModuleDecl::Import(ImportDecl {
                     span: DUMMY_SP,

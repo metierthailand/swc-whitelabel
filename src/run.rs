@@ -38,7 +38,7 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
         panic!("Failed to load config");
     };
 
-    let cfg = config::config::get();
+    let cfg = config::config::with_config(|c| c.clone());
 
     let report_modified_files = create_reporter(|c| c.output_file_name_only);
 
