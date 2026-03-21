@@ -26,9 +26,10 @@ pub fn exec(
 ) -> Result<Vec<String>> {
     let mut global_symbols: HashMap<String, Vec<WhitelabelEntry>> = HashMap::new();
     let mut modified_files: Vec<String> = Vec::new();
-    let cfg = config::get();
-    let ts_cfg =
-        tsconfig::load(cfg.tsconfig.clone().unwrap()).expect("Failed to load tsconfig.json");
+    let ts_cfg = config::with_config(|cfg| {
+        tsconfig::load(cfg.tsconfig.clone().unwrap()).expect("Failed to load tsconfig.json")
+    });
+    let output_dir = config::with_config(|cfg| cfg.output_dir.clone());
 
     // 🎯 IDIOMATIC: Consuming the iterator (Value Move)
     for entry in collector.entries.into_iter() {
@@ -40,7 +41,7 @@ pub fn exec(
 
     for entry in files {
         let path = entry.as_ref().unwrap();
-        if path.to_string_lossy().contains(cfg.output_dir.as_str()) {
+        if path.to_string_lossy().contains(output_dir.as_str()) {
             continue;
         }
 

@@ -38,16 +38,16 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
         panic!("Failed to load config");
     };
 
-    let cfg = config::config::get();
+    let cfg = config::config::with_config(|c| c.clone());
 
     let report_modified_files = create_reporter(|c| c.output_file_name_only);
 
     // 1. Determine the path to the existing generated file (e.g., `app/whitelabel/triva.generated.tsx`)
-    let mut existing_default_whitelabel = cfg.cwd.clone();
-    existing_default_whitelabel.push(format!(
-        "{}{}/{}.generated.tsx",
-        cfg.src, cfg.output_dir, cfg.default_target
-    ));
+    let existing_default_whitelabel = cfg
+        .cwd
+        .join(&cfg.src)
+        .join(&cfg.output_dir)
+        .join(format!("{}.generated.tsx", cfg.default_target));
     let mut existing_whitelabel_scanner = WhitelabelScanner::default();
 
     // 2. Only run the diffing engine if the old generated file actually exists!
@@ -80,11 +80,13 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
     GLOBALS.set(&globals, || {
         let mut files: Vec<Result<PathBuf, GlobError>> = vec![];
 
-        let mut root_dir = cfg.cwd.clone();
-        root_dir.push(&cfg.src);
+        // let mut root_dir = cfg.cwd.clone();
+        // root_dir.push(&cfg.src);
+        let root_dir = cfg.cwd.join(&cfg.src);
 
         for pattern in &cfg.patterns {
-            let Ok(paths) = glob(format!("{}{}", root_dir.display(), pattern).as_str()) else {
+            let abs = root_dir.join(pattern);
+            let Ok(paths) = glob(abs.to_str().unwrap()) else {
                 panic!("Failed to load {}", pattern)
             };
             for p in paths {
@@ -146,15 +148,14 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
         let mut grouped_entries: HashMap<String, Vec<&ast::collector::WhitelabelEntry>> =
             HashMap::new();
         let mut rename_map: HashMap<String, String> = HashMap::new();
+
         for entry in &mut collector.entries {
             let pb = PathBuf::from(&entry.import_path);
 
-            entry.import_path = pb
-                .with_extension("")
-                .strip_prefix(&cfg.src)
-                .unwrap_or(&pb)
-                .display()
-                .to_string();
+            // Safely strip the absolute project root to guarantee a relative snapshot path
+            let relative_pb = pb.strip_prefix(&root_dir).unwrap_or(&pb);
+
+            entry.import_path = relative_pb.to_string_lossy().to_string();
             if entry.target.is_none() {
                 entry.target = Some(cfg.default_target.clone());
             }
@@ -191,9 +192,7 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
             println!("🏗️ Starting whitelabel code generation...",);
         });
 
-        let mut output_dir = cfg.cwd.clone();
-        output_dir.push(&cfg.src);
-        output_dir.push(&cfg.output_dir);
+        let output_dir = root_dir.join(&cfg.output_dir);
         fs::create_dir_all(&output_dir)?;
 
         for (target, entry) in &grouped_entries {
@@ -208,7 +207,7 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
             modified_files.push(target_path);
         }
 
-        let target_path = format!("{}/index.ts", output_dir.display());
+        let target_path = output_dir.join("index.ts");
         fs::write(
             &target_path,
             generator::index::generate(
@@ -217,9 +216,9 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
             ),
         )?;
 
-        modified_files.push(target_path);
+        modified_files.push(target_path.to_string_lossy().to_string());
 
-        let determiner = PathBuf::from(format!("{}/determine-whitelabel.ts", output_dir.display()));
+        let determiner = output_dir.join("determine-whitelabel.ts");
 
         if determiner.exists() {
             report(|| {
@@ -230,10 +229,10 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
             });
         } else {
             fs::write(
-                determiner,
+                &determiner,
                 generator::determines_whitelabel::generate(cfg.default_target.clone()),
             )?;
-            modified_files.push(format!("{}/determine-whitelabel.ts", output_dir.display()));
+            modified_files.push(determiner.to_string_lossy().to_string());
         }
 
         report(|| {

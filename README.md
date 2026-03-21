@@ -1,5 +1,7 @@
 # 🏷️ Whitelabel Extractor (wl-extractor)
 
+> **⚠️ Status: In Active Development** > This project is currently in its early stages and is undergoing rapid iteration to ensure library-grade robustness. While the core codemod architecture is established, please be aware that breaking changes may occur. To see our immediate priorities, known limitations, and upcoming milestones, please review the [Roadmap in `CONTRIBUTION.md`](./CONTRIBUTION.md).
+
 Welcome to the **Whitelabel Extractor**! This is a lightning-fast, Rust-based AST transformation tool built on top of [SWC](https://swc.rs/).
 
 In a multi-tenant application, we often have different configurations, strings, or UI components for different brands (targets). Instead of cluttering the codebase with `if (brand === 'X')`, this tool allows developers to write standard localized variables, and it handles the heavy lifting of extracting them, generating a registry, and rewriting the codebase to use them dynamically.

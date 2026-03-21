@@ -4,12 +4,12 @@ pub fn generate(default_wl: String) -> String {
 // THIS MODULE IS FOR CUSTOM LOGIC TO DETERMINE CURRENT WHITELABEL
 // TODO: possibility for HTTP per-request whitelabel
 
-import type {{ Whitelabel }} from '.'
+import type {{ Variants }} from '.'
 
-const currentWhitelabel = (process.env.NEXT_PUBLIC_WHITELABEL as Whitelabel) || '{}'
+const currentWhitelabel = (process.env.NEXT_PUBLIC_WHITELABEL as Variants) || '{}'
 
-// ! exported result have to be `satisfies Whitelabel`
-export default currentWhitelabel satisfies Whitelabel
+// ! exported result must be `satisfies Variants`
+export default currentWhitelabel satisfies Variants
 "#,
         default_wl
     )

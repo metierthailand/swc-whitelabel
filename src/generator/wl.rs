@@ -7,14 +7,13 @@ use crate::{
 };
 
 fn to_rel_import(current_dir: &PathBuf, entry: &WhitelabelEntry) -> PathBuf {
-    let relative_import = match util::compute_relative_import(
-        current_dir,
-        PathBuf::from(&entry.import_path).as_path(),
-    ) {
+    let absolute_target =
+        config::with_config(|cfg| cfg.cwd.join(&cfg.src).join(&entry.import_path));
+
+    match util::compute_relative_import(current_dir, &absolute_target) {
         Some(s) => PathBuf::from(s).with_extension(""),
-        None => todo!(),
-    };
-    relative_import
+        None => PathBuf::from(&entry.import_path), // Safe fallback
+    }
 }
 
 fn format_doc(entry: &WhitelabelEntry, current_dir: &PathBuf) -> String {
@@ -29,7 +28,7 @@ fn format_doc(entry: &WhitelabelEntry, current_dir: &PathBuf) -> String {
 * ```tsx
 {}
 * ```
-* 
+*
 */
 "#,
         entry.target.as_deref().unwrap_or_default(),
@@ -45,44 +44,49 @@ fn format_doc(entry: &WhitelabelEntry, current_dir: &PathBuf) -> String {
 }
 
 pub fn generate(entries: &Vec<&collector::WhitelabelEntry>, is_default: bool) -> String {
-    let cfg = config::get();
     let mut output = String::new();
     output.push_str(if !is_default {
-        "// AUTO-GENERATED: DO NOT EDIT\n\nimport type { WhitelabelConfig } from '.';\n"
+        "/* eslint-disable @typescript-eslint/no-require-imports */\n\n// AUTO-GENERATED: DO NOT EDIT\n\nimport type { WhitelabelConfig } from '.';\n"
     } else {
-        "// AUTO-GENERATED: DO NOT EDIT\n\n"
+        "/* eslint-disable @typescript-eslint/no-require-imports */\n\n// AUTO-GENERATED: DO NOT EDIT\n\n"
     });
 
     let mut sorted_entries: Vec<&WhitelabelEntry> = entries.to_vec();
     sorted_entries.sort_by_key(|e| &e.key);
 
-    let mut current_dir = cfg.cwd.clone();
-    current_dir.push(&cfg.src);
-    current_dir.push(&cfg.output_dir);
+    let current_dir = config::with_config(|cfg| cfg.cwd.join(&cfg.src).join(&cfg.output_dir));
 
     for entry in &sorted_entries {
         let relative_import = to_rel_import(&current_dir, entry);
         output.push_str(&format!(
-            "import {{ {} }} from \"{}\";\n",
+            "import type {{ {} }} from \"{}\";\n",
             entry.symbol,
             relative_import.to_string_lossy()
         ));
     }
 
-    output.push_str("\nconst whitelabel = {\n");
-    for entry in &sorted_entries {
-        output.push_str(&format_doc(entry, &current_dir));
-        if entry.symbol == entry.key {
-            output.push_str(&format!("  {},\n", entry.symbol));
-        } else {
-            output.push_str(&format!("  {}: {},\n", entry.key, entry.symbol))
-        }
-    }
     output.push_str(if !is_default {
-        "} satisfies WhitelabelConfig;\n\nexport default whitelabel;\n"
+        "\nexport class whitelabel implements WhitelabelConfig {\n"
     } else {
-        "};\n\nexport default whitelabel;\n"
+        "\nexport class whitelabel {\n"
     });
+    for entry in &sorted_entries {
+        let relative_import = to_rel_import(&current_dir, entry);
+
+        output.push_str(&format_doc(entry, &current_dir));
+        output.push_str(&format!(
+            r#"public get {}(): typeof {} {{
+                return require('{}').{}
+              }}
+          "#,
+            entry.key,
+            entry.symbol,
+            relative_import.to_string_lossy(),
+            entry.symbol
+        ));
+    }
+
+    output.push_str("};\n\nexport default whitelabel;\n");
 
     output
 }

@@ -2,6 +2,6 @@
 source: tests/collector_test.rs
 expression: collector.errors
 ---
-- Unsupported export declaration for whitelabel /Users/intaniger/exploring/wl-extractor/tests/fixtures/collector/reject_types/types.tsx @5
-- Unsupported export declaration for whitelabel /Users/intaniger/exploring/wl-extractor/tests/fixtures/collector/reject_types/types.tsx @8
-- Unsupported export declaration for whitelabel /Users/intaniger/exploring/wl-extractor/tests/fixtures/collector/reject_types/types.tsx @11
+- Unsupported export declaration for whitelabel ./tests/fixtures/collector/reject_types/types.tsx @5
+- Unsupported export declaration for whitelabel ./tests/fixtures/collector/reject_types/types.tsx @8
+- Unsupported export declaration for whitelabel ./tests/fixtures/collector/reject_types/types.tsx @11

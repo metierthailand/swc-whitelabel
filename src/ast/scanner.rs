@@ -39,7 +39,7 @@ impl<'a> SymbolScanner<'a> {
     /// Resolves an import string into an absolute physical file path
     /// Fully respects relative imports and tsconfig.json `paths` aliases.
     fn resolve_import(&self, current_file_path: PathBuf, import_src: &str) -> Option<PathBuf> {
-        let cfg = config::get();
+        let cwd = config::with_config(|cfg| cfg.cwd.clone());
         let mut base_paths_to_try = Vec::new();
 
         // 🎯 CATEGORY 1: Relative Import (Bypasses TS paths)
@@ -52,7 +52,7 @@ impl<'a> SymbolScanner<'a> {
         // Step 1: Check for an EXACT match (e.g., "@/app/whitelabel")
         else if let Some(mapped_paths) = self.path_mapping.get(import_src) {
             for mapped_path in mapped_paths {
-                base_paths_to_try.push(cfg.cwd.join(mapped_path));
+                base_paths_to_try.push(cwd.join(mapped_path));
             }
         }
         // Step 2: Check for a WILDCARD match (e.g., "@app/*")
@@ -67,7 +67,7 @@ impl<'a> SymbolScanner<'a> {
             for mapped_path in mapped_paths {
                 // Inject the matched string into the mapped path's '*'
                 let resolved_mapped = mapped_path.replace("*", wildcard_match);
-                base_paths_to_try.push(cfg.cwd.join(resolved_mapped));
+                base_paths_to_try.push(cwd.join(resolved_mapped));
             }
         } else {
             return None;
@@ -163,12 +163,16 @@ impl<'a> Visit for SymbolScanner<'a> {
                             .iter()
                             .find(|entry| match fs::canonicalize(&resolved_path) {
                                 Ok(abs_resolved_path) => {
-                                    let match_exact = match fs::canonicalize(&entry.import_path) {
+                                    let absolute_import_path = config::with_config(|cfg| {
+                                        cfg.cwd.join(&cfg.src).join(&entry.import_path)
+                                    });
+                                    let match_exact = match fs::canonicalize(&absolute_import_path)
+                                    {
                                         Ok(path) => path == abs_resolved_path,
                                         _ => true,
                                     };
 
-                                    let match_parent = match fs::canonicalize(&entry.import_path)
+                                    let match_parent = match fs::canonicalize(&absolute_import_path)
                                         .map(|pb| pb.parent().map(|parent| parent.to_path_buf()))
                                     {
                                         Ok(parent) => {
@@ -202,8 +206,10 @@ impl<'a> Visit for SymbolScanner<'a> {
             && let name = ident.id.sym.to_string()
             && let Some(entries) = self.global_symbols.get(&name)
             && let Some(entry) = entries.iter().find(|e| {
+                let absolute_import_path =
+                    config::with_config(|cfg| cfg.cwd.join(&cfg.src).join(&e.import_path));
                 fs::canonicalize(self.current_file_name.as_ref().unwrap().to_string()).unwrap()
-                    == fs::canonicalize(&e.import_path).unwrap()
+                    == fs::canonicalize(&absolute_import_path).unwrap()
             })
         {
             report(|| {
