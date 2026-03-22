@@ -1,0 +1,134 @@
+use lalrpop_util::ParseError;
+
+use crate::ast::directive::ast;
+use crate::ast::directive::ast::{
+  ForModifier,
+  Modifier,
+  Directive,
+  DirectiveError,
+};
+
+grammar;
+
+extern {
+    type Error = DirectiveError;
+}
+
+match {
+    // once an ignore pattern is present, you must handle whitespace skipping yourself
+    r"\s*" => { },
+
+    // case-insensitive keywords
+    r"(?i)whitelabel" => "WHITELABEL",
+    r"(?i)for"        => "FOR",
+    r"(?i)key"        => "KEY",
+    r"(?i)as"        => "AS",
+    r"(?i)optional"   => "OPTIONAL",
+} else {
+    // bare value
+    r#"[^,'\"*\s:=]+"# => VALUE,
+
+    "=",
+    ":",
+    ",",
+    "*",
+    "\"",
+    "'"
+}
+
+OptDirectiveSeparator: () = {
+    => (),
+    ":" => (),
+};
+
+OptQuote: () = {
+  "\"" => (),
+  "'" => (),
+  => ()
+}
+
+OptComma: () = {
+    => (),
+    "," => (),
+};
+
+OptAssignment: () = {
+    => (),
+    <_a:Assignment> => (),
+};
+
+Assignment: () = {
+    "=" => (),
+    ":" => (),
+};
+
+pub DirectiveRule: Directive = {
+    "WHITELABEL" <_sep:OptDirectiveSeparator> <mods:Modifiers> => {
+        mods
+    }
+};
+
+Modifiers: Vec<Modifier> = {
+    <head:Modifier> <tail:ModifierTail*> =>? {
+        let mut all = vec![head];
+        all.extend(tail);
+
+        let for_or_wildcard_count = all
+            .iter()
+            .filter(|m| matches!(
+                  m,
+                  ast::Modifier::ForModifier(ast::ForModifier::Wildcard)
+                      | ast::Modifier::ForModifier(ast::ForModifier::For(_))
+                ))
+            .count();
+
+        if for_or_wildcard_count > 1 {
+            Err(ParseError::User {
+                error: DirectiveError::ForOrWildcardConflict,
+            })
+        } else {
+            Ok(all)
+        }
+    },
+    => vec![],
+};
+
+ModifierTail: Modifier = {
+    <_sep:OptComma> <m:Modifier> => m,
+};
+
+
+Modifier: Modifier = {
+    <m:ForModifier> => m,
+    <m:KeyModifier> => m,
+    <m:BooleanFlag> => m,
+};
+
+ForModifier: ast::Modifier = {
+    <m:WildcardFor> => m,
+    <m:TargetedFor> => m,
+};
+
+WildcardFor: ast::Modifier = {
+    "*" => ast::Modifier::ForModifier(ast::ForModifier::Wildcard),
+};
+
+TargetedFor: ast::Modifier = {
+    "FOR" <_a:OptAssignment> <v:Value>
+      => ast::Modifier::ForModifier(ast::ForModifier::For(v)),
+};
+
+KeyModifier: ast::Modifier = {
+    "KEY" <_a:Assignment> <v:Value>
+        => ast::Modifier::Key(v),
+    "AS" <_a:OptAssignment> <v:Value>
+        => ast::Modifier::Key(v),
+};
+
+BooleanFlag: ast::Modifier = {
+    "OPTIONAL" => ast::Modifier::Optional(true),
+};
+
+Value: String = {
+  <_open:OptQuote> <v:VALUE> <_close:OptQuote> => v.to_string(),
+};

@@ -7,8 +7,7 @@ use crate::{
 };
 
 fn to_rel_import(current_dir: &Path, entry: &WhitelabelEntry) -> PathBuf {
-    let absolute_target =
-        env::with_config(|cfg| cfg.cwd.join(&cfg.src).join(&entry.import_path));
+    let absolute_target = env::with_config(|cfg| cfg.cwd.join(&cfg.src).join(&entry.import_path));
 
     match util::compute_relative_import(current_dir, &absolute_target) {
         Some(s) => PathBuf::from(s).with_extension(""),

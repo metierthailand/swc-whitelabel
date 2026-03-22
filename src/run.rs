@@ -19,11 +19,11 @@ use swc_core::{
 use swc_core::common::{GLOBALS, Globals};
 
 use crate::ast;
+use crate::ast::whitelabel::WhitelabelScanner;
 use crate::config;
 use crate::generator;
 use crate::module;
 
-use crate::ast::whitelabel::WhitelabelScanner;
 use crate::util::{create_reporter, report};
 
 pub fn run(cwd: Option<PathBuf>) -> Result<()> {
