@@ -75,3 +75,17 @@ export const CFG_TITLE_4_3 = "3_4_ELTIT_GFC";
 
 // whitelabel key=TITLE
 export const TITLE_5 = "5_ELTIT";
+
+/**
+ * Multiple targets are allowed
+ */
+
+// whitelabel for 'a', for 'b'
+export const MULTIPLE_TARGETS = ["a", "b"];
+
+/**
+ * But targets with * is not.
+ */
+
+// whitelabel for 'a', *
+export const MIXED_TARGETS = ["a", "b"];

@@ -1,7 +1,7 @@
 use lalrpop_util::ParseError;
 
-use crate::ast::directive::ast;
-use crate::ast::directive::ast::{
+use crate::ast::parser::ast;
+use crate::ast::parser::ast::{
   ForModifier,
   Modifier,
   Directive,
@@ -73,16 +73,15 @@ Modifiers: Vec<Modifier> = {
         let mut all = vec![head];
         all.extend(tail);
 
-        let for_or_wildcard_count = all
+        let is_wildcard_exists = all
             .iter()
-            .filter(|m| matches!(
-                  m,
-                  ast::Modifier::ForModifier(ast::ForModifier::Wildcard)
-                      | ast::Modifier::ForModifier(ast::ForModifier::For(_))
-                ))
-            .count();
+            .any(|m| matches!(m, ast::Modifier::ForModifier(ast::ForModifier::Wildcard)));
 
-        if for_or_wildcard_count > 1 {
+        let is_targeted_for_exists = all
+            .iter()
+            .any(|m| matches!(m, ast::Modifier::ForModifier(ast::ForModifier::For(_))));
+
+        if is_wildcard_exists && is_targeted_for_exists {
             Err(ParseError::User {
                 error: DirectiveError::ForOrWildcardConflict,
             })

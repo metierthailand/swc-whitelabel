@@ -86,7 +86,8 @@ impl<'a> WhitelabelCollector<'a> {
 
                     return Some(parsed_directive);
                 } else {
-                    eprintln!("Error: {:?}", directive_ast_result.err());
+                    self.errors
+                        .push(format!("Parsing error: {:?}", directive_ast_result.err()));
                     continue;
                 };
             }

@@ -145,6 +145,7 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
             for err in &collector.errors {
                 eprintln!("❌ Error: {}", err);
             }
+            return Err(anyhow!("{:?}", collector.errors));
         }
 
         // Group entries by target (e.g., trivacafe, martech)

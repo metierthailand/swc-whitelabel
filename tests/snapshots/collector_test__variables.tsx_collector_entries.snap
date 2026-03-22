@@ -57,3 +57,13 @@ expression: "collector.entries.iter_mut().map(|e|\n{\n    let to_rel =\n    env:
   symbol: TITLE_5
   import_path: "./tests/fixtures/collector/accept_src/variables.tsx"
   _experiment_remark: "\"5_ELTIT\""
+- target: a
+  key: MULTIPLE_TARGETS
+  symbol: MULTIPLE_TARGETS
+  import_path: "./tests/fixtures/collector/accept_src/variables.tsx"
+  _experiment_remark: "[\"a\", \"b\"]"
+- target: b
+  key: MULTIPLE_TARGETS
+  symbol: MULTIPLE_TARGETS
+  import_path: "./tests/fixtures/collector/accept_src/variables.tsx"
+  _experiment_remark: "[\"a\", \"b\"]"

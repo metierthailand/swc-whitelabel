@@ -1,6 +1,6 @@
 use anyhow::Result;
-use std::fs;
 use std::collections::HashMap;
+use std::fs;
 use swc_core::common::SourceFile;
 use swc_core::{
     common::{Mark, SourceMap, comments::SingleThreadedComments, sync::Lrc},
@@ -45,6 +45,8 @@ pub fn exec(cm: &Lrc<SourceMap>, collector: WhitelabelCollector<'_>) -> Result<V
         if fm.name.to_string().contains(output_dir.as_str()) {
             continue;
         }
+
+        
 
         let comments = SingleThreadedComments::default();
         let lexer = Lexer::new(
