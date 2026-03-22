@@ -1,8 +1,8 @@
 ---
 source: tests/collector_test.rs
-expression: "collector.entries.iter_mut().map(|e|\n{\n    let to_rel =\n    config::with_config(|cfg|\n    {\n        util::compute_relative_import(cfg.cwd.as_path(),\n        PathBuf::from(&e.import_path).as_path(),)\n    }); e.import_path = to_rel.unwrap(); e\n}).collect::<Vec<&mut WhitelabelEntry>>()"
+expression: "collector.entries.iter_mut().map(|e|\n{\n    let to_rel =\n    env::with_config(|cfg|\n    {\n        util::compute_relative_import(cfg.cwd.as_path(),\n        PathBuf::from(&e.import_path).as_path(),)\n    }); e.import_path = to_rel.unwrap(); e\n}).collect::<Vec<&mut WhitelabelEntry>>()"
 ---
-- target: ~
+- target: def
   key: TITLE
   symbol: TITLE
   import_path: "./tests/fixtures/collector/accept_src/variables.tsx"
@@ -27,7 +27,7 @@ expression: "collector.entries.iter_mut().map(|e|\n{\n    let to_rel =\n    conf
   symbol: TITLE_4
   import_path: "./tests/fixtures/collector/accept_src/variables.tsx"
   _experiment_remark: "\"4_ELTIT\""
-- target: ~
+- target: def
   key: TITLE
   symbol: TITLE_5
   import_path: "./tests/fixtures/collector/accept_src/variables.tsx"

@@ -160,14 +160,10 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
             let relative_pb = pb.strip_prefix(&root_dir).unwrap_or(&pb);
 
             entry.import_path = relative_pb.to_string_lossy().to_string();
-            let actual_target = match entry.target.clone() {
-                Some(t) => t,
-                None => cfg.default_target.clone(),
-            };
 
             if let Some(prev_key) = existing_whitelabel_scanner.symbol_to_key.get(&entry.symbol)
                 && prev_key != &entry.key
-                && actual_target == cfg.default_target.as_str()
+                && entry.target == cfg.default_target
             {
                 report(|| {
                     println!(
@@ -180,14 +176,12 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
             report(|| {
                 println!(
                     "\t🪡 ({}) found {} @ {}",
-                    actual_target, entry.symbol, entry.import_path
+                    entry.target, entry.symbol, entry.import_path
                 );
             });
 
-            entry.target = Some(actual_target.deref().to_string());
-
             grouped_entries
-                .entry(actual_target.clone())
+                .entry(entry.target.clone())
                 .or_default()
                 .push(entry);
         }

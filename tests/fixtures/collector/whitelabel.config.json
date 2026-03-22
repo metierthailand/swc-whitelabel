@@ -2,6 +2,6 @@
   "src": ".",
   "patterns": [],
   "output_dir": "n/a",
-  "default_target": "n/a",
+  "default_target": "__def__",
   "tsconfig": "n/a"
 }

@@ -30,7 +30,7 @@ fn format_doc(entry: &WhitelabelEntry, current_dir: &Path) -> String {
 *
 */
 "#,
-        entry.target.as_deref().unwrap_or_default(),
+        entry.target,
         to_rel_import(current_dir, entry).to_string_lossy(),
         entry.symbol,
         entry

@@ -1,5 +1,5 @@
 pub mod collector;
-pub mod directive;
+pub mod parser;
 pub mod rename;
 pub mod rewriter;
 pub mod scanner;

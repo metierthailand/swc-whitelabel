@@ -1,7 +1,7 @@
 // auto-generated: "lalrpop 0.23.1"
 // sha3: 99955b67d79d66498d1b9e5bab681973823dc1cc26829a2bca07a8b48ffdaf0a
-use crate::ast::directive::ast;
-use crate::ast::directive::ast::{Directive, DirectiveError, ForModifier, Modifier};
+use crate::ast::parser::ast;
+use crate::ast::parser::ast::{Directive, DirectiveError, ForModifier, Modifier};
 use lalrpop_util::ParseError;
 #[allow(unused_extern_crates)]
 extern crate lalrpop_util as __lalrpop_util;
@@ -15,8 +15,8 @@ extern crate alloc;
 mod __parse__DirectiveRule {
 
     use lalrpop_util::ParseError;
-    use crate::ast::directive::ast;
-    use crate::ast::directive::ast::{
+    use crate::ast::parser::ast;
+    use crate::ast::parser::ast::{
   ForModifier,
   Modifier,
   Directive,
@@ -1428,8 +1428,8 @@ pub use self::__parse__DirectiveRule::DirectiveRuleParser;
 mod __intern_token {
     #![allow(unused_imports)]
     use lalrpop_util::ParseError;
-    use crate::ast::directive::ast;
-    use crate::ast::directive::ast::{
+    use crate::ast::parser::ast;
+    use crate::ast::parser::ast::{
   ForModifier,
   Modifier,
   Directive,

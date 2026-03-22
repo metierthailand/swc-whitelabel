@@ -13,17 +13,18 @@ use swc_core::{
     },
 };
 
-use crate::{config::env, util};
+use crate::ast::parser::ast;
+use crate::{ast::parser::directive::DirectiveRuleParser, config::env, util};
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 struct WhitelabelDirective {
-    targets: Vec<Option<String>>,
+    targets: Vec<String>,
     key: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
 pub struct WhitelabelEntry {
-    pub target: Option<String>,
+    pub target: String,
     pub key: String,
     pub symbol: String,
     pub import_path: String,
@@ -54,28 +55,40 @@ impl<'a> WhitelabelCollector<'a> {
     ) -> Option<WhitelabelDirective> {
         let leading_comments = self.comments.get_leading(span.lo)?;
         for comment in leading_comments {
-            let text = comment.text.trim();
-            if let Some(rest) = text.strip_prefix("whitelabel") {
-                let directive = rest.trim_start_matches(':');
+            let directive_str = comment.text.trim();
 
-                let mut targets = Vec::new();
-                let mut key = None;
+            if directive_str.starts_with("whitelabel") {
+                let directive_ast_result = DirectiveRuleParser::new().parse(directive_str);
+                if let Ok(directive_ast) = directive_ast_result {
+                    let mut parsed_directive: WhitelabelDirective =
+                        directive_ast
+                            .iter()
+                            .fold(Default::default(), |mut wl, opt| {
+                                match opt {
+                                    ast::Modifier::Optional(_) => todo!(),
+                                    ast::Modifier::ForModifier(ast::ForModifier::For(t)) => {
+                                        wl.targets.push(t.clone())
+                                    }
 
-                for part in directive.split(',') {
-                    let part = part.trim();
-                    if let Some(t) = part.strip_prefix("for=") {
-                        targets.push(Some(t.trim().to_string()));
-                    } else if let Some(k) = part.strip_prefix("key=") {
-                        key = Some(k.trim().to_string());
+                                    ast::Modifier::ForModifier(ast::ForModifier::Wildcard) => {
+                                        wl.targets.push("*".into())
+                                    }
+                                    ast::Modifier::Key(k) => wl.key = Some(k.clone()),
+                                };
+                                wl
+                            });
+
+                    if parsed_directive.targets.is_empty() {
+                        parsed_directive
+                            .targets
+                            .push(env::with_config(|cfg| cfg.default_target.clone()));
                     }
-                }
 
-                // Smart Fallback: If no `for=` is provided, use the default!
-                if targets.is_empty() {
-                    targets.push(None);
-                }
-
-                return Some(WhitelabelDirective { targets, key });
+                    return Some(parsed_directive);
+                } else {
+                    eprintln!("Error: {:?}", directive_ast_result.err());
+                    continue;
+                };
             }
         }
         None
