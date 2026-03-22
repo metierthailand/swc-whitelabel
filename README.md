@@ -38,21 +38,47 @@ Before running the tool, create a `whitelabel.config.json` file in the root of y
 
 ### 1. Mark your Exports
 
-To mark a variable, function, or component for extraction, simply add a magic comment directly above the `export` statement.
+To mark a variable, function, or component for extraction, simply add a magic comment directly above the `export` statement. 
 
-The directive format is: `// whitelabel: for=<target>, key=<custom_key>`
+The directive follows this flexible syntax:
 
-- **`for`**: (Optional) The specific brand/tenant this code applies to. If omitted, it falls back to the `default_target` from your config. You can specify multiple targets separated by commas.
-- **`key`**: (Optional) A custom key for the registry. If omitted, the tool uses the variable's original name.
+```text
+WHITELABEL [ ":" ] [ modifier [, modifier ...] ]
 
-**Example:** [`basic-usages` fixture input](./tests/fixtures/integrations/basic-usages/app/home/page.tsx#L3-L7)
+modifier:
+    *
+  | FOR [ "=" | ":" ] value
+  | KEY ( "=" | ":" ) value
+  | AS  [ "=" | ":" ] value
+  | OPTIONAL
+
+value:
+string
+| "'" string "'"
+| '"' string '"'
+````
+
+**Available Modifiers:**
+
+  - **`for`**: (Optional) The specific brand/tenant this code applies to. You can use `=` or `:` (e.g., `for=variant1` or `for:'variant1'`). If omitted, it falls back to the `default_target` from your config.
+  - **`key`**: (Optional) A custom key for the registry. Requires `=` or `:` (e.g., `key=BG_COLOR`). If omitted, the tool uses the variable's original name.
+  - **`as`**: (Optional) Same as `key`.
+  - **`optional`**: (Optional) Flags the extraction as optional.
+  - **`*`**: (Optional) A wildcard modifier (typically used to apply the extraction to all targets).
+
+*Note: The `:` after `whitelabel` is optional. Modifier values can be unquoted, single-quoted (`'...'`), or double-quoted (`"..."`).*
+
+**Example:** [`basic-usages` fixture input](https://www.google.com/search?q=./tests/fixtures/integrations/basic-usages/app/home/page.tsx%23L3-L7)
 
 ```tsx
 // whitelabel: key=BG_COLOR
 export const bgClassname = "bg-red-500";
 
-// whitelabel: for=variant1, key=BG_COLOR
+// whitelabel for:variant1, key="BG_COLOR"
 export const variant1_bgClassname = "bg-green-500";
+
+// whitelabel optional, as='FallbackColor'
+export const fallbackClassname = "bg-gray-200";
 ```
 
 ### 2. Run the Extractor
