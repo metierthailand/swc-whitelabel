@@ -22,7 +22,7 @@ match {
     r"(?i)whitelabel" => "WHITELABEL",
     r"(?i)for"        => "FOR",
     r"(?i)key"        => "KEY",
-    r"(?i)as"        => "AS",
+    r"(?i)as"         => "AS",
     r"(?i)optional"   => "OPTIONAL",
 } else {
     // bare value
@@ -42,9 +42,9 @@ OptDirectiveSeparator: () = {
 };
 
 OptQuote: () = {
-  "\"" => (),
-  "'" => (),
-  => ()
+    "\"" => (),
+    "'" => (),
+    => ()
 }
 
 OptComma: () = {
@@ -130,5 +130,5 @@ BooleanFlag: ast::Modifier = {
 };
 
 Value: String = {
-  <_open:OptQuote> <v:VALUE> <_close:OptQuote> => v.to_string(),
+    <_open:OptQuote> <v:VALUE> <_close:OptQuote> => v.to_string(),
 };
