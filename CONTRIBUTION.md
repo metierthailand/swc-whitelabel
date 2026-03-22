@@ -30,7 +30,7 @@ We ruthlessly prioritize our backlog based on **Blast Radius and Risk Mitigation
 ### 🟡 P2: The "Data Fidelity" Release (Fixing Silent Omissions)
 **Goal:** Guarantee that if a developer writes valid code or configurations, the tool captures it perfectly and warns them if they make a logical mistake.
 
-* [ ] **8. Duplicate Key Detection:** Fail loudly if two exports target the same `key` for the same brand, preventing silent HashMap overwrites and missing logic.
+* [x] **8. Duplicate Key Detection:** Fail loudly if two exports target the same `key` for the same brand, preventing silent HashMap overwrites and missing logic.
 * [ ] **9. Log Silent Parse Skips:** Currently, `Err(_) => continue` silently skips unparseable files. Emit a console warning so users know a file wasn't transformed.
 * [ ] **10. Enterprise Optionality (`optional` & `null as never`):** Inject `null as never` for keys that aren't implemented in the default whitelabel, forcing TypeScript to catch missing tenant features at compile-time rather than crashing at runtime.
 * [x] **11. Implement CFG Grammar for Directives:** Allow flexible, shuffled comma-separated parameters in the `// whitelabel:` comments.

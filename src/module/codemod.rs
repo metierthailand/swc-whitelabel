@@ -46,8 +46,6 @@ pub fn exec(cm: &Lrc<SourceMap>, collector: WhitelabelCollector<'_>) -> Result<V
             continue;
         }
 
-        
-
         let comments = SingleThreadedComments::default();
         let lexer = Lexer::new(
             Syntax::Typescript(TsSyntax {

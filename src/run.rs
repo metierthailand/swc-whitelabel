@@ -1,5 +1,6 @@
 use anyhow::{Result, anyhow};
 use glob::{GlobError, glob};
+use std::collections::HashSet;
 use std::fs;
 use std::{collections::HashMap, path::PathBuf};
 use swc_core::{
@@ -148,6 +149,8 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
             return Err(anyhow!("{:?}", collector.errors));
         }
 
+        // Tracking duplication
+        let mut seen_keys: HashSet<(String, String)> = HashSet::new();
         // Group entries by target (e.g., trivacafe, martech)
         let mut grouped_entries: HashMap<String, Vec<&ast::collector::WhitelabelEntry>> =
             HashMap::new();
@@ -179,6 +182,13 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
                     entry.target, entry.symbol, entry.import_path
                 );
             });
+
+            let unique_key = (entry.target.clone(), entry.key.clone());
+            if seen_keys.contains(&unique_key) {
+                return Err(anyhow!("Error: duplicate key found {:?}", unique_key));
+            }
+
+            seen_keys.insert(unique_key);
 
             grouped_entries
                 .entry(entry.target.clone())
