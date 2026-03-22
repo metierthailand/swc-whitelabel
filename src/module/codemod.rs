@@ -1,7 +1,6 @@
-use anyhow::{Result, anyhow};
-use glob::GlobError;
+use anyhow::Result;
 use std::fs;
-use std::{collections::HashMap, path::PathBuf};
+use std::collections::HashMap;
 use swc_core::common::SourceFile;
 use swc_core::{
     common::{Mark, SourceMap, comments::SingleThreadedComments, sync::Lrc},

@@ -1,10 +1,7 @@
-use std::path::PathBuf;
 
-use glob::GlobError;
 
 use swc_core::common::{SourceFile, SourceMap, sync::Lrc};
 
-use anyhow::Result;
 use std::collections::HashMap;
 use std::fs;
 use swc_core::{
