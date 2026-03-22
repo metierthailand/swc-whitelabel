@@ -1,6 +1,6 @@
 /**
  * Shorten form of whitelabel
- * Default target = 'wl'
+ * Default target = '__def__'
  */
 
 // whitelabel

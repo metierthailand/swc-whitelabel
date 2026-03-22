@@ -22,11 +22,36 @@ expression: "collector.entries.iter_mut().map(|e|\n{\n    let to_rel =\n    env:
   symbol: TITLE_3
   import_path: "./tests/fixtures/collector/accept_src/variables.tsx"
   _experiment_remark: "\"3_ELTIT\""
+- target: wl
+  key: CFG_TITLE_3
+  symbol: CFG_TITLE_3
+  import_path: "./tests/fixtures/collector/accept_src/variables.tsx"
+  _experiment_remark: "\"3_ELTIT_GFC\""
 - target: bunny
   key: TITLE
   symbol: TITLE_4
   import_path: "./tests/fixtures/collector/accept_src/variables.tsx"
   _experiment_remark: "\"4_ELTIT\""
+- target: bunny
+  key: TITLE
+  symbol: CFG_TITLE_4
+  import_path: "./tests/fixtures/collector/accept_src/variables.tsx"
+  _experiment_remark: "\"4_ELTIT_GFC\""
+- target: bunny
+  key: TITLE
+  symbol: CFG_TITLE_4_1
+  import_path: "./tests/fixtures/collector/accept_src/variables.tsx"
+  _experiment_remark: "\"1_4_ELTIT_GFC\""
+- target: wl
+  key: TITLE
+  symbol: CFG_TITLE_4_2
+  import_path: "./tests/fixtures/collector/accept_src/variables.tsx"
+  _experiment_remark: "\"2_4_ELTIT_GFC\""
+- target: wl
+  key: TITLE
+  symbol: CFG_TITLE_4_3
+  import_path: "./tests/fixtures/collector/accept_src/variables.tsx"
+  _experiment_remark: "\"3_4_ELTIT_GFC\""
 - target: def
   key: TITLE
   symbol: TITLE_5

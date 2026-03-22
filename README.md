@@ -24,10 +24,10 @@ Before running the tool, create a `whitelabel.config.json` file in the root of y
 
 ```json
 {
-  "src": "./src",
+  "src": "src/",
   "patterns": ["**/*.tsx", "**/*.ts"],
-  "output_dir": "/app/whitelabel",
-  "default_target": "brandA",
+  "output_dir": "whitelabel",
+  "default_target": "def",
   "tsconfig": "tsconfig.json"
 }
 ```
@@ -70,15 +70,32 @@ string
 
 **Example:** [`basic-usages` fixture input](https://www.google.com/search?q=./tests/fixtures/integrations/basic-usages/app/home/page.tsx%23L3-L7)
 
-```tsx
-// whitelabel: key=BG_COLOR
-export const bgClassname = "bg-red-500";
+```ts
+/**
+ * The most formal `whitelabel` marker
+ */
+// whitelabel: for=variant1, key=BG_COLOR
+export const variant1_bgClassname: string = "bg-red-100";
 
-// whitelabel for:variant1, key="BG_COLOR"
-export const variant1_bgClassname = "bg-green-500";
+/**
+ * If `for` is omitted, it will default to your `default_target` config
+ */
+// whitelabel
+export const BG_COLOR: string = "bg-red-200";
 
-// whitelabel optional, as='FallbackColor'
-export const fallbackClassname = "bg-gray-200";
+/**
+ * The most natural `whitelabel` marker
+ * `as` works the same way as `key`, excepts you can omits `=`.
+ */
+// whitelabel for 'variant2' as 'BG_COLOR'
+export const variant2_bgClassname: string = "bg-red-300";
+
+/**
+ * Or
+ * (Not recommended, hard to read)
+ */
+// whitelabel for variant3 as BG_COLOR
+export const variant3_bgClassname: string = "bg-red-400";
 ```
 
 ### 2. Run the Extractor

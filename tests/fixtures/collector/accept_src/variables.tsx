@@ -1,6 +1,6 @@
 /**
  * Shorten form of whitelabel
- * Default target = 'wl'
+ * Default target = '__def__'
  */
 
 // whitelabel
@@ -28,11 +28,46 @@ export const TITLE_2 = "2_ELTIT";
 export const TITLE_3 = "3_ELTIT";
 
 /**
+ * Natural marker
+ */
+// whitelabel for wl
+export const CFG_TITLE_3 = "3_ELTIT_GFC";
+
+/**
  * With key overriding
  */
 
 // whitelabel for=bunny, key=TITLE
 export const TITLE_4 = "4_ELTIT";
+
+/**
+ * Or `as`
+ */
+
+// whitelabel for=bunny, as TITLE
+export const CFG_TITLE_4 = "4_ELTIT_GFC";
+
+/**
+ * Or
+ */
+
+// whitelabel for bunny, as TITLE
+export const CFG_TITLE_4_1 = "1_4_ELTIT_GFC";
+
+/**
+ * Or
+ */
+
+// whitelabel for 'wl' as 'TITLE'
+export const CFG_TITLE_4_2 = "2_4_ELTIT_GFC";
+
+/**
+ * Or
+ * (Not recommended, hard to read)
+ */
+
+// whitelabel for wl as TITLE
+export const CFG_TITLE_4_3 = "3_4_ELTIT_GFC";
 
 /**
  * Key overriding but default target
