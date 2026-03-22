@@ -1,7 +1,6 @@
 use anyhow::{Result, anyhow};
 use glob::{GlobError, glob};
 use std::fs;
-use std::ops::Deref;
 use std::{collections::HashMap, path::PathBuf};
 use swc_core::{
     common::{

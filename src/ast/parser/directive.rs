@@ -1,7 +1,7 @@
 // auto-generated: "lalrpop 0.23.1"
 // sha3: 99955b67d79d66498d1b9e5bab681973823dc1cc26829a2bca07a8b48ffdaf0a
 use crate::ast::parser::ast;
-use crate::ast::parser::ast::{Directive, DirectiveError, ForModifier, Modifier};
+use crate::ast::parser::ast::{Directive, DirectiveError, Modifier};
 use lalrpop_util::ParseError;
 #[allow(unused_extern_crates)]
 extern crate lalrpop_util as __lalrpop_util;
@@ -928,8 +928,8 @@ mod __parse__DirectiveRule {
         let __sym0 = __pop_Variant0(__symbols);
         let __start = __sym0.0.clone();
         let __end = __sym0.2.clone();
-        let __nt = super::__action10::<>(input, __sym0);
-        __symbols.push((__start, __Symbol::Variant1(__nt), __end));
+        super::__action10::<>(input, __sym0);
+        __symbols.push((__start, __Symbol::Variant1(()), __end));
         (1, 0)
     }
     fn __reduce1<
@@ -945,8 +945,8 @@ mod __parse__DirectiveRule {
         let __sym0 = __pop_Variant0(__symbols);
         let __start = __sym0.0.clone();
         let __end = __sym0.2.clone();
-        let __nt = super::__action11::<>(input, __sym0);
-        __symbols.push((__start, __Symbol::Variant1(__nt), __end));
+        super::__action11::<>(input, __sym0);
+        __symbols.push((__start, __Symbol::Variant1(()), __end));
         (1, 0)
     }
     fn __reduce2<
@@ -1227,8 +1227,8 @@ mod __parse__DirectiveRule {
         // OptAssignment =  => ActionFn(8);
         let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2)).unwrap_or_default();
         let __end = __start;
-        let __nt = super::__action8::<>(input, &__start, &__end);
-        __symbols.push((__start, __Symbol::Variant1(__nt), __end));
+        super::__action8::<>(input, &__start, &__end);
+        __symbols.push((__start, __Symbol::Variant1(()), __end));
         (0, 10)
     }
     fn __reduce20<
@@ -1244,8 +1244,8 @@ mod __parse__DirectiveRule {
         let __sym0 = __pop_Variant1(__symbols);
         let __start = __sym0.0.clone();
         let __end = __sym0.2.clone();
-        let __nt = super::__action9::<>(input, __sym0);
-        __symbols.push((__start, __Symbol::Variant1(__nt), __end));
+        super::__action9::<>(input, __sym0);
+        __symbols.push((__start, __Symbol::Variant1(()), __end));
         (1, 10)
     }
     fn __reduce21<
@@ -1260,8 +1260,8 @@ mod __parse__DirectiveRule {
         // OptComma =  => ActionFn(6);
         let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2)).unwrap_or_default();
         let __end = __start;
-        let __nt = super::__action6::<>(input, &__start, &__end);
-        __symbols.push((__start, __Symbol::Variant1(__nt), __end));
+        super::__action6::<>(input, &__start, &__end);
+        __symbols.push((__start, __Symbol::Variant1(()), __end));
         (0, 11)
     }
     fn __reduce22<
@@ -1277,8 +1277,8 @@ mod __parse__DirectiveRule {
         let __sym0 = __pop_Variant0(__symbols);
         let __start = __sym0.0.clone();
         let __end = __sym0.2.clone();
-        let __nt = super::__action7::<>(input, __sym0);
-        __symbols.push((__start, __Symbol::Variant1(__nt), __end));
+        super::__action7::<>(input, __sym0);
+        __symbols.push((__start, __Symbol::Variant1(()), __end));
         (1, 11)
     }
     fn __reduce23<
@@ -1293,8 +1293,8 @@ mod __parse__DirectiveRule {
         // OptDirectiveSeparator =  => ActionFn(1);
         let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2)).unwrap_or_default();
         let __end = __start;
-        let __nt = super::__action1::<>(input, &__start, &__end);
-        __symbols.push((__start, __Symbol::Variant1(__nt), __end));
+        super::__action1::<>(input, &__start, &__end);
+        __symbols.push((__start, __Symbol::Variant1(()), __end));
         (0, 12)
     }
     fn __reduce24<
@@ -1310,8 +1310,8 @@ mod __parse__DirectiveRule {
         let __sym0 = __pop_Variant0(__symbols);
         let __start = __sym0.0.clone();
         let __end = __sym0.2.clone();
-        let __nt = super::__action2::<>(input, __sym0);
-        __symbols.push((__start, __Symbol::Variant1(__nt), __end));
+        super::__action2::<>(input, __sym0);
+        __symbols.push((__start, __Symbol::Variant1(()), __end));
         (1, 12)
     }
     fn __reduce25<
@@ -1327,8 +1327,8 @@ mod __parse__DirectiveRule {
         let __sym0 = __pop_Variant0(__symbols);
         let __start = __sym0.0.clone();
         let __end = __sym0.2.clone();
-        let __nt = super::__action3::<>(input, __sym0);
-        __symbols.push((__start, __Symbol::Variant1(__nt), __end));
+        super::__action3::<>(input, __sym0);
+        __symbols.push((__start, __Symbol::Variant1(()), __end));
         (1, 13)
     }
     fn __reduce26<
@@ -1344,8 +1344,8 @@ mod __parse__DirectiveRule {
         let __sym0 = __pop_Variant0(__symbols);
         let __start = __sym0.0.clone();
         let __end = __sym0.2.clone();
-        let __nt = super::__action4::<>(input, __sym0);
-        __symbols.push((__start, __Symbol::Variant1(__nt), __end));
+        super::__action4::<>(input, __sym0);
+        __symbols.push((__start, __Symbol::Variant1(()), __end));
         (1, 13)
     }
     fn __reduce27<
@@ -1360,8 +1360,8 @@ mod __parse__DirectiveRule {
         // OptQuote =  => ActionFn(5);
         let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2)).unwrap_or_default();
         let __end = __start;
-        let __nt = super::__action5::<>(input, &__start, &__end);
-        __symbols.push((__start, __Symbol::Variant1(__nt), __end));
+        super::__action5::<>(input, &__start, &__end);
+        __symbols.push((__start, __Symbol::Variant1(()), __end));
         (0, 13)
     }
     fn __reduce28<
@@ -1572,7 +1572,7 @@ fn __action12<'input>(
     (_, _sep, _): (usize, (), usize),
     (_, mods, _): (usize, Vec<Modifier>, usize),
 ) -> Directive {
-    { mods }
+    mods
 }
 
 #[allow(unused_variables)]
