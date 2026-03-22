@@ -115,8 +115,12 @@ mod tests {
         // library function that accepts a working directory, rather than
         // relying on the global `env::current_dir()`.
 
-        // Example: my_extractor::run(workspace.path());
-        let _ = wl_extractor::run::run(Some(workspace.path().to_path_buf()));
+        if let Err(e) = wl_extractor::run::run(Some(workspace.path().to_path_buf())) {
+            assert_snapshot!(fixture_name.to_string() + "-error", e);
+            return;
+        }
+
+        // FIXME: assertion should fails if there is an error snapshot.
 
         // 4. Assert the Results!
         // This takes everything in the temp folder and compares it to the saved snapshot

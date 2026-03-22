@@ -1,7 +1,7 @@
 use anyhow::{Result, anyhow};
 use glob::{GlobError, glob};
+use std::collections::HashSet;
 use std::fs;
-use std::ops::Deref;
 use std::{collections::HashMap, path::PathBuf};
 use swc_core::{
     common::{
@@ -19,11 +19,11 @@ use swc_core::{
 use swc_core::common::{GLOBALS, Globals};
 
 use crate::ast;
+use crate::ast::whitelabel::WhitelabelScanner;
 use crate::config;
 use crate::generator;
 use crate::module;
 
-use crate::ast::whitelabel::WhitelabelScanner;
 use crate::util::{create_reporter, report};
 
 pub fn run(cwd: Option<PathBuf>) -> Result<()> {
@@ -146,8 +146,11 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
             for err in &collector.errors {
                 eprintln!("❌ Error: {}", err);
             }
+            return Err(anyhow!("{:?}", collector.errors));
         }
 
+        // Tracking duplication
+        let mut seen_keys: HashSet<(String, String)> = HashSet::new();
         // Group entries by target (e.g., trivacafe, martech)
         let mut grouped_entries: HashMap<String, Vec<&ast::collector::WhitelabelEntry>> =
             HashMap::new();
@@ -160,14 +163,10 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
             let relative_pb = pb.strip_prefix(&root_dir).unwrap_or(&pb);
 
             entry.import_path = relative_pb.to_string_lossy().to_string();
-            let actual_target = match entry.target.clone() {
-                Some(t) => t,
-                None => cfg.default_target.clone(),
-            };
 
             if let Some(prev_key) = existing_whitelabel_scanner.symbol_to_key.get(&entry.symbol)
                 && prev_key != &entry.key
-                && actual_target == cfg.default_target.as_str()
+                && entry.target == cfg.default_target
             {
                 report(|| {
                     println!(
@@ -180,14 +179,19 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
             report(|| {
                 println!(
                     "\t🪡 ({}) found {} @ {}",
-                    actual_target, entry.symbol, entry.import_path
+                    entry.target, entry.symbol, entry.import_path
                 );
             });
 
-            entry.target = Some(actual_target.deref().to_string());
+            let unique_key = (entry.target.clone(), entry.key.clone());
+            if seen_keys.contains(&unique_key) {
+                return Err(anyhow!("Error: duplicate key found {:?}", unique_key));
+            }
+
+            seen_keys.insert(unique_key);
 
             grouped_entries
-                .entry(actual_target.clone())
+                .entry(entry.target.clone())
                 .or_default()
                 .push(entry);
         }
@@ -251,13 +255,13 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
         // -----------------------------------------------------------------------------
         // Codemod Pass: Rewrite References Across All Files
         // -----------------------------------------------------------------------------
-        let codemod_modified_files = module::codemod::exec(&cm, &files, collector)?;
+        let codemod_modified_files = module::codemod::exec(&cm, collector)?;
 
         modified_files.extend(codemod_modified_files);
 
         if !rename_map.is_empty() {
             // TODO: make others `module` as well.
-            let renamed_files = module::rename_whitelabel::exec(&files, &cm, &rename_map);
+            let renamed_files = module::rename_whitelabel::exec(&cm, &rename_map);
             modified_files.extend(renamed_files);
         }
 

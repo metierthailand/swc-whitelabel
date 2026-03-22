@@ -1,6 +1,6 @@
 ---
 source: tests/integration_test.rs
-expression: idempt_output
+expression: final_output
 ---
 --- app/home/_components/heading.tsx ---
 import { FC } from "react";
@@ -12,10 +12,28 @@ export const Heading: FC = () => <h1>Heading</h1>;
 --- app/home/page.tsx ---
 import whitelabel from "../whitelabel";
 import { Heading } from "./_components/heading";
-// whitelabel: key=BG_COLOR
-export const bgClassname: string = "bg-red-500";
-// whitelabel: for=variant1, key=BG_COLOR
-export const variant1_bgClassname: string = "bg-green-500";
+/**
+ * The most formal `whitelabel` marker
+ */ // whitelabel: for=variant1, key=BG_COLOR
+export const variant1_bgClassname: string = "bg-red-100";
+/**
+ * If `for` is omitted, it will default to your `default_target` config
+ */ // whitelabel
+export const BG_COLOR: string = "bg-red-200";
+/**
+ * The most natural `whitelabel` marker
+ * `as` works the same way as `key`, excepts you can omits `=`.
+ */ // whitelabel for 'variant2' as 'BG_COLOR'
+export const variant2_bgClassname: string = "bg-red-300";
+/**
+ * Or
+ * (Not recommended, hard to read)
+ */ // whitelabel for variant3 as BG_COLOR
+export const variant3_bgClassname: string = "bg-red-400";
+/**
+ * Or
+ */ // whitelabel for 'variant4' as='BG_COLOR'
+export const variant4_bgClassname: string = "bg-red-400";
 const Homepage = () => (
   <div className={`h-full w-full ${whitelabel.BG_COLOR}`}>
     <whitelabel.Heading />
@@ -36,7 +54,7 @@ export const Heading: FC = () => <h1>Variant1 Heading</h1>;
 
 // AUTO-GENERATED: DO NOT EDIT
 
-import type { bgClassname } from "../home/page";
+import type { BG_COLOR } from "../home/page";
 import type { Heading } from "../home/_components/heading";
 
 export class whitelabel {
@@ -45,15 +63,15 @@ export class whitelabel {
    *
    * **from `../home/page`**
    *
-   * Go to {@link bgClassname | implementation}.
+   * Go to {@link BG_COLOR | implementation}.
    * @default
    * ```tsx
-   * "bg-red-500"
+   * "bg-red-200"
    * ```
    *
    */
-  public get BG_COLOR(): typeof bgClassname {
-    return require("../home/page").bgClassname;
+  public get BG_COLOR(): typeof BG_COLOR {
+    return require("../home/page").BG_COLOR;
   }
   /**
    * ### 🏷️ Tenant: `def`
@@ -93,8 +111,11 @@ export default currentWhitelabel satisfies Variants;
 import __current from "./determine-whitelabel";
 import type def from "./def.generated";
 import type variant1 from "./variant1.generated";
+import type variant2 from "./variant2.generated";
+import type variant3 from "./variant3.generated";
+import type variant4 from "./variant4.generated";
 export type WhitelabelConfig = InstanceType<typeof def>;
-export type Variants = "def" | "variant1";
+export type Variants = "def" | "variant1" | "variant2" | "variant3" | "variant4";
 
 class Whitelabel implements Record<Variants, WhitelabelConfig> {
   public get def(): WhitelabelConfig {
@@ -103,6 +124,18 @@ class Whitelabel implements Record<Variants, WhitelabelConfig> {
   }
   public get variant1(): WhitelabelConfig {
     const VariantConfig = require("./variant1.generated").default;
+    return new VariantConfig();
+  }
+  public get variant2(): WhitelabelConfig {
+    const VariantConfig = require("./variant2.generated").default;
+    return new VariantConfig();
+  }
+  public get variant3(): WhitelabelConfig {
+    const VariantConfig = require("./variant3.generated").default;
+    return new VariantConfig();
+  }
+  public get variant4(): WhitelabelConfig {
+    const VariantConfig = require("./variant4.generated").default;
     return new VariantConfig();
   }
 }
@@ -128,7 +161,7 @@ export class whitelabel implements WhitelabelConfig {
    * Go to {@link variant1_bgClassname | implementation}.
    * @default
    * ```tsx
-   * "bg-green-500"
+   * "bg-red-100"
    * ```
    *
    */
@@ -149,6 +182,93 @@ export class whitelabel implements WhitelabelConfig {
    */
   public get Heading(): typeof Heading {
     return require("../variant1.const").Heading;
+  }
+}
+
+export default whitelabel;
+
+
+--- app/whitelabel/variant2.generated.tsx ---
+/* eslint-disable @typescript-eslint/no-require-imports */
+
+// AUTO-GENERATED: DO NOT EDIT
+
+import type { WhitelabelConfig } from ".";
+import type { variant2_bgClassname } from "../home/page";
+
+export class whitelabel implements WhitelabelConfig {
+  /**
+   * ### 🏷️ Tenant: `variant2`
+   *
+   * **from `../home/page`**
+   *
+   * Go to {@link variant2_bgClassname | implementation}.
+   * @default
+   * ```tsx
+   * "bg-red-300"
+   * ```
+   *
+   */
+  public get BG_COLOR(): typeof variant2_bgClassname {
+    return require("../home/page").variant2_bgClassname;
+  }
+}
+
+export default whitelabel;
+
+
+--- app/whitelabel/variant3.generated.tsx ---
+/* eslint-disable @typescript-eslint/no-require-imports */
+
+// AUTO-GENERATED: DO NOT EDIT
+
+import type { WhitelabelConfig } from ".";
+import type { variant3_bgClassname } from "../home/page";
+
+export class whitelabel implements WhitelabelConfig {
+  /**
+   * ### 🏷️ Tenant: `variant3`
+   *
+   * **from `../home/page`**
+   *
+   * Go to {@link variant3_bgClassname | implementation}.
+   * @default
+   * ```tsx
+   * "bg-red-400"
+   * ```
+   *
+   */
+  public get BG_COLOR(): typeof variant3_bgClassname {
+    return require("../home/page").variant3_bgClassname;
+  }
+}
+
+export default whitelabel;
+
+
+--- app/whitelabel/variant4.generated.tsx ---
+/* eslint-disable @typescript-eslint/no-require-imports */
+
+// AUTO-GENERATED: DO NOT EDIT
+
+import type { WhitelabelConfig } from ".";
+import type { variant4_bgClassname } from "../home/page";
+
+export class whitelabel implements WhitelabelConfig {
+  /**
+   * ### 🏷️ Tenant: `variant4`
+   *
+   * **from `../home/page`**
+   *
+   * Go to {@link variant4_bgClassname | implementation}.
+   * @default
+   * ```tsx
+   * "bg-red-400"
+   * ```
+   *
+   */
+  public get BG_COLOR(): typeof variant4_bgClassname {
+    return require("../home/page").variant4_bgClassname;
   }
 }
 

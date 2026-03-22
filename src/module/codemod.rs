@@ -1,7 +1,7 @@
-use anyhow::{Result, anyhow};
-use glob::GlobError;
+use anyhow::Result;
+use std::collections::HashMap;
 use std::fs;
-use std::{collections::HashMap, path::PathBuf};
+use swc_core::common::SourceFile;
 use swc_core::{
     common::{Mark, SourceMap, comments::SingleThreadedComments, sync::Lrc},
     ecma::{
@@ -19,11 +19,7 @@ use crate::ast::scanner::SymbolScanner;
 use crate::config::{env, tsconfig};
 use crate::util::report;
 
-pub fn exec(
-    cm: &Lrc<SourceMap>,
-    files: &Vec<std::result::Result<PathBuf, GlobError>>,
-    collector: WhitelabelCollector<'_>,
-) -> Result<Vec<String>> {
+pub fn exec(cm: &Lrc<SourceMap>, collector: WhitelabelCollector<'_>) -> Result<Vec<String>> {
     let mut global_symbols: HashMap<String, Vec<WhitelabelEntry>> = HashMap::new();
     let mut modified_files: Vec<String> = Vec::new();
     let ts_cfg = env::with_config(|cfg| tsconfig::load(cfg.tsconfig.clone()))?;
@@ -37,16 +33,19 @@ pub fn exec(
             .push(entry); // The struct is MOVED, not cloned!
     }
 
-    for entry in files {
-        let path = match entry.as_ref() {
-            Ok(path) => path,
-            Err(e) => return Err(anyhow!("Failed to unwrap entry: {:?}", e.error())),
-        };
-        if path.to_string_lossy().contains(output_dir.as_str()) {
+    let files: Vec<Lrc<SourceFile>> = {
+        // 🔒 Acquire the lock
+        let guard = cm.files();
+
+        // Clone the Arcs into a new Vec
+        guard.iter().cloned().collect()
+    };
+
+    for fm in files {
+        if fm.name.to_string().contains(output_dir.as_str()) {
             continue;
         }
 
-        let fm = cm.load_file(path)?;
         let comments = SingleThreadedComments::default();
         let lexer = Lexer::new(
             Syntax::Typescript(TsSyntax {
@@ -54,7 +53,7 @@ pub fn exec(
                 ..Default::default()
             }),
             Default::default(),
-            StringInput::from(&*fm),
+            StringInput::from(fm.as_ref()),
             Some(&comments),
         );
         let mut parser = Parser::new_from(lexer);
@@ -81,6 +80,7 @@ pub fn exec(
         program.visit_mut_with(&mut rewriter);
 
         if rewriter.has_modified {
+            let filename = fm.name.to_string();
             let mut buf = vec![];
             let mut emitter = Emitter {
                 cfg: swc_core::ecma::codegen::Config::default()
@@ -91,11 +91,11 @@ pub fn exec(
                 wr: JsWriter::new(cm.clone(), "\n", &mut buf, None),
             };
             emitter.emit_program(&program)?;
-            fs::write(path, String::from_utf8(buf)?)?;
-            modified_files.push(path.to_string_lossy().to_string());
+            fs::write(&filename, String::from_utf8(buf)?)?;
+            modified_files.push(filename.clone());
 
             report(|| {
-                println!("✅  Rewrote references in {}", path.display());
+                println!("✅  Rewrote references in {}", filename);
             });
         }
     }

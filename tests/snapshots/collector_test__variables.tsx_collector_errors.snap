@@ -2,4 +2,4 @@
 source: tests/collector_test.rs
 expression: collector.errors
 ---
-[]
+- "Parsing error: Some(User { error: ForOrWildcardConflict })"
