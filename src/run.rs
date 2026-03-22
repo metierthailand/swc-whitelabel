@@ -244,13 +244,13 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
         // -----------------------------------------------------------------------------
         // Codemod Pass: Rewrite References Across All Files
         // -----------------------------------------------------------------------------
-        let codemod_modified_files = module::codemod::exec(&cm, &files, collector)?;
+        let codemod_modified_files = module::codemod::exec(&cm, collector)?;
 
         modified_files.extend(codemod_modified_files);
 
         if !rename_map.is_empty() {
             // TODO: make others `module` as well.
-            let renamed_files = module::rename_whitelabel::exec(&files, &cm, &rename_map);
+            let renamed_files = module::rename_whitelabel::exec(&cm, &rename_map);
             modified_files.extend(renamed_files);
         }
 

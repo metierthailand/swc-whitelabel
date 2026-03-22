@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use glob::GlobError;
 
-use swc_core::common::{SourceMap, sync::Lrc};
+use swc_core::common::{SourceFile, SourceMap, sync::Lrc};
 
 use anyhow::Result;
 use std::collections::HashMap;
@@ -19,30 +19,25 @@ use swc_core::{
 
 use crate::ast;
 
-pub fn exec(
-    files: &Vec<Result<PathBuf, GlobError>>,
-    cm: &Lrc<SourceMap>,
-    rename_map: &HashMap<String, String>,
-) -> Vec<String> {
+pub fn exec(cm: &Lrc<SourceMap>, rename_map: &HashMap<String, String>) -> Vec<String> {
     let comments = SingleThreadedComments::default();
-
     let mut modified_files: Vec<String> = Vec::new();
+    let files: Vec<Lrc<SourceFile>> = {
+        // 🔒 Acquire the lock
+        let guard = cm.files();
 
-    for entry in files {
-        let Ok(path) = entry else {
-            continue;
-        };
+        // Clone the Arcs into a new Vec
+        guard.iter().cloned().collect()
+    };
 
-        let Ok(fm) = cm.load_file(path) else {
-            continue;
-        };
+    for fm in files {
         let lexer = Lexer::new(
             Syntax::Typescript(TsSyntax {
                 tsx: true,
                 ..Default::default()
             }),
             Default::default(),
-            StringInput::from(&*fm),
+            StringInput::from(fm.as_ref()),
             Some(&comments),
         );
         let mut parser = Parser::new_from(lexer);
@@ -58,7 +53,7 @@ pub fn exec(
         program.visit_mut_with(&mut wl_rename);
 
         if wl_rename.has_modified {
-            modified_files.push(path.to_string_lossy().to_string());
+            modified_files.push(fm.name.to_string());
             let mut buf = vec![];
             let mut emitter = Emitter {
                 cfg: swc_core::ecma::codegen::Config::default()
@@ -70,7 +65,7 @@ pub fn exec(
             };
             let _ = emitter.emit_program(&program);
             if let Ok(code) = String::from_utf8(buf) {
-                let _ = fs::write(path, code);
+                let _ = fs::write(fm.name.to_string(), code);
             }
         }
     }
