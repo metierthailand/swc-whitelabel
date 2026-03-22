@@ -71,7 +71,7 @@ impl<'a> WhitelabelCollector<'a> {
                                     }
 
                                     ast::Modifier::ForModifier(ast::ForModifier::Wildcard) => {
-                                        wl.targets.push("*".into())
+                                        todo!()
                                     }
                                     ast::Modifier::Key(k) => wl.key = Some(k.clone()),
                                 };

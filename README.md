@@ -46,11 +46,9 @@ The directive parser uses a formal Context-Free Grammar (CFG), allowing for a hi
 WHITELABEL [ ":" ] [ modifier [, modifier ...] ]
 
 modifier:
-    *
-  | FOR [ "=" | ":" ] value
+    FOR [ "=" | ":" ] value
   | KEY ( "=" | ":" ) value
   | AS  [ "=" | ":" ] value
-  | OPTIONAL
 
 value:
     string
@@ -63,8 +61,6 @@ value:
 * **`for`**: (Optional) The specific brand/tenant this code applies to. You can use `=`, `:`, or omit the operator entirely (e.g., `for=variant1`, `for:'variant1'`, or `for variant1`). If omitted, it falls back to the `default_target` defined in your config.
 * **`key`**: (Optional) A custom key for the registry. Requires `=` or `:` (e.g., `key=BG_COLOR`). If omitted, the tool uses the variable's original exported name.
 * **`as`**: (Optional) An ergonomic alias for `key` that does not require an operator (e.g., `as BG_COLOR`).
-* **`optional`**: (Optional) Flags the extraction as optional for the target.
-* **`*`**: (Optional) A wildcard modifier indicating the extraction applies to all targets.
 
 *Note: The `:` immediately following `whitelabel` is entirely optional. Modifier values can be unquoted, single-quoted (`'...'`), or double-quoted (`"..."`).*
 
@@ -136,7 +132,7 @@ const Homepage = () => (
 export default Homepage;
 ```
 
-**After:** [test snapshot](./tests/snapshots/integration_test__tests__basic-usages.snap#L10-L24)
+**After:** [test snapshot](./tests/snapshots/integration_test__tests__basic-usages.snap#L12-L45)
 
 ```tsx
 import whitelabel from "../whitelabel"; // Injected automatically!
