@@ -1,9 +1,12 @@
-use std::path::PathBuf;
+use std::{
+    fmt::{self, Debug},
+    path::PathBuf,
+};
 
 use serde::Serialize;
 use swc_core::{
     common::{
-        SourceMap, SourceMapper, Spanned,
+        SourceMap, SourceMapper, Span, Spanned,
         comments::{Comments, SingleThreadedComments},
         sync::Lrc,
     },
@@ -16,19 +19,66 @@ use swc_core::{
 use crate::ast::parser::ast;
 use crate::{ast::parser::directive::DirectiveRuleParser, config::env, util};
 
+#[derive(Clone)]
+enum WhitelabelTargets {
+    Targetted(Vec<String>),
+    Wildcard,
+}
+
+impl WhitelabelTargets {
+    pub fn is_empty(&self) -> bool {
+        match self {
+            WhitelabelTargets::Targetted(items) => items.is_empty(),
+            WhitelabelTargets::Wildcard => false,
+        }
+    }
+
+    pub fn push(&mut self, i: String) {
+        match self {
+            WhitelabelTargets::Targetted(items) => {
+                items.push(i);
+            }
+            WhitelabelTargets::Wildcard => {}
+        }
+    }
+}
+
+impl Default for WhitelabelTargets {
+    fn default() -> Self {
+        Self::Targetted(vec![])
+    }
+}
+
 #[derive(Clone, Default)]
 struct WhitelabelDirective {
-    targets: Vec<String>,
+    targets: WhitelabelTargets,
     key: Option<String>,
+    optional: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub enum WhitelabelTarget {
+    Targetted(String),
+    Wildcard,
+}
+
+impl fmt::Display for WhitelabelTarget {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            WhitelabelTarget::Targetted(target) => write!(f, "{}", target),
+            WhitelabelTarget::Wildcard => write!(f, "*"),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize)]
 pub struct WhitelabelEntry {
-    pub target: String,
+    pub target: WhitelabelTarget,
     pub key: String,
     pub symbol: String,
     pub import_path: String,
     pub _experiment_remark: String,
+    pub optional: bool,
 }
 
 pub struct WhitelabelCollector<'a> {
@@ -65,13 +115,12 @@ impl<'a> WhitelabelCollector<'a> {
                             .iter()
                             .fold(Default::default(), |mut wl, opt| {
                                 match opt {
-                                    ast::Modifier::Optional(_) => todo!(),
+                                    ast::Modifier::Optional(b) => wl.optional = b.to_owned(),
                                     ast::Modifier::ForModifier(ast::ForModifier::For(t)) => {
-                                        wl.targets.push(t.clone())
+                                        wl.targets.push(t.to_owned());
                                     }
-
                                     ast::Modifier::ForModifier(ast::ForModifier::Wildcard) => {
-                                        todo!()
+                                        wl.targets = WhitelabelTargets::Wildcard
                                     }
                                     ast::Modifier::Key(k) => wl.key = Some(k.clone()),
                                 };
@@ -101,13 +150,51 @@ impl<'a> WhitelabelCollector<'a> {
 
         loc.file.name.to_string()
     }
+
+    fn register(
+        &mut self,
+        symbol: String,
+        final_key: String,
+        targets: WhitelabelTargets,
+        optional: bool,
+        span: Span,
+    ) {
+        match targets {
+            WhitelabelTargets::Targetted(items) => {
+                for target in items {
+                    self.entries.push(WhitelabelEntry {
+                        optional,
+                        target: WhitelabelTarget::Targetted(target),
+                        key: final_key.clone(),
+                        symbol: symbol.clone(),
+                        import_path: self.get_filename(span),
+                        _experiment_remark: self
+                            .source_map
+                            .span_to_snippet(span)
+                            .unwrap_or_default(),
+                    });
+                }
+            }
+            WhitelabelTargets::Wildcard => self.entries.push(WhitelabelEntry {
+                optional,
+                target: WhitelabelTarget::Wildcard,
+                key: final_key.clone(),
+                symbol: symbol.clone(),
+                import_path: self.get_filename(span),
+                _experiment_remark: self.source_map.span_to_snippet(span).unwrap_or_default(),
+            }),
+        }
+    }
 }
 
 impl<'a> Visit for WhitelabelCollector<'a> {
     // Catch standard `export const` and `export function`
     fn visit_export_decl(&mut self, export: &ExportDecl) {
-        if let Some(WhitelabelDirective { targets, key }) =
-            self.get_whitelabel_target_and_key(export.span)
+        if let Some(WhitelabelDirective {
+            targets,
+            key,
+            optional,
+        }) = self.get_whitelabel_target_and_key(export.span)
         {
             match &export.decl {
                 Decl::Var(var_decl) => {
@@ -117,37 +204,14 @@ impl<'a> Visit for WhitelabelCollector<'a> {
                         let symbol = ident.id.sym.to_string();
                         let final_key = key.clone().unwrap_or_else(|| symbol.clone());
 
-                        // Loop through all targets and push an entry for each!
-                        for target in targets {
-                            self.entries.push(WhitelabelEntry {
-                                target,
-                                key: final_key.clone(),
-                                symbol: symbol.clone(),
-                                import_path: self.get_filename(export.span),
-                                _experiment_remark: self
-                                    .source_map
-                                    .span_to_snippet(decl.init.span())
-                                    .unwrap_or_default(),
-                            });
-                        }
+                        self.register(symbol, final_key, targets, optional, decl.init.span());
                     }
                 }
                 Decl::Fn(fn_decl) => {
                     let symbol = fn_decl.ident.sym.to_string();
                     let final_key = key.clone().unwrap_or_else(|| symbol.clone());
 
-                    for target in targets {
-                        self.entries.push(WhitelabelEntry {
-                            target,
-                            key: final_key.clone(),
-                            symbol: symbol.clone(),
-                            import_path: self.get_filename(export.span),
-                            _experiment_remark: self
-                                .source_map
-                                .span_to_snippet(fn_decl.function.span)
-                                .unwrap_or_default(),
-                        });
-                    }
+                    self.register(symbol, final_key, targets, optional, fn_decl.span());
                 }
                 _ => {
                     let loc = self.source_map.lookup_char_pos(export.span.lo);

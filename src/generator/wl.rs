@@ -42,7 +42,7 @@ fn format_doc(entry: &WhitelabelEntry, current_dir: &Path) -> String {
     )
 }
 
-pub fn generate(entries: &Vec<&collector::WhitelabelEntry>, is_default: bool) -> String {
+pub fn generate(entries: &[collector::WhitelabelEntry], is_default: bool) -> String {
     let mut output = String::new();
     output.push_str(if !is_default {
         "/* eslint-disable @typescript-eslint/no-require-imports */\n\n// AUTO-GENERATED: DO NOT EDIT\n\nimport type { WhitelabelConfig } from '.';\n"
@@ -50,8 +50,8 @@ pub fn generate(entries: &Vec<&collector::WhitelabelEntry>, is_default: bool) ->
         "/* eslint-disable @typescript-eslint/no-require-imports */\n\n// AUTO-GENERATED: DO NOT EDIT\n\n"
     });
 
-    let mut sorted_entries: Vec<&WhitelabelEntry> = entries.to_vec();
-    sorted_entries.sort_by_key(|e| &e.key);
+    let mut sorted_entries: Vec<WhitelabelEntry> = entries.to_vec();
+    sorted_entries.sort_by_key(|e| e.key.clone());
 
     let current_dir = env::with_config(|cfg| cfg.cwd.join(&cfg.src).join(&cfg.output_dir));
 

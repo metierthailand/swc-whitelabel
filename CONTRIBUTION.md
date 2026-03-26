@@ -24,7 +24,7 @@ We ruthlessly prioritize our backlog based on **Blast Radius and Risk Mitigation
 ### 🛑 P1: The "Adoption Blocker" Release (Fixing Panics)
 **Goal:** Ensure the tool runs smoothly on standard, messy real-world repositories without throwing Rust `panic!` traces.
 
-* [ ] **6. Halt on Validation Errors & Fix CLI Exit Codes:** Stop swallowing errors in `main.rs`. If the collector finds an invalid directive, the tool **must fail with a non-zero exit code** and halt before the codemod phase. "Partial success" is unacceptable for codebase-wide migrations.
+* [x] **6. Halt on Validation Errors & Fix CLI Exit Codes:** Stop swallowing errors in `main.rs`. If the collector finds an invalid directive, the tool **must fail with a non-zero exit code** and halt before the codemod phase. "Partial success" is unacceptable for codebase-wide migrations.
 * [x] **7. Eradicate `unwrap/expect/panic` in `run.rs`:** Convert all initialization, glob parsing, and file I/O errors into contextual `anyhow::Result` user-facing error messages. 
 
 ### 🟡 P2: The "Data Fidelity" Release (Fixing Silent Omissions)
@@ -32,7 +32,7 @@ We ruthlessly prioritize our backlog based on **Blast Radius and Risk Mitigation
 
 * [x] **8. Duplicate Key Detection:** Fail loudly if two exports target the same `key` for the same brand, preventing silent HashMap overwrites and missing logic.
 * [ ] **9. Log Silent Parse Skips:** Currently, `Err(_) => continue` silently skips unparseable files. Emit a console warning so users know a file wasn't transformed.
-* [ ] **10. Enterprise Optionality (`optional` & `null as never`):** Inject `null as never` for keys that aren't implemented in the default whitelabel, forcing TypeScript to catch missing tenant features at compile-time rather than crashing at runtime.
+* [x] **10. Enterprise Optionality (`optional` & `null as never`):** Inject `null as never` for keys that aren't implemented in the default whitelabel, forcing TypeScript to catch missing tenant features at compile-time rather than crashing at runtime.
 * [x] **11. Implement CFG Grammar for Directives:** Allow flexible, shuffled comma-separated parameters in the `// whitelabel:` comments.
 
 ### 🛠️ P3: The "Engineering Rigor" Release (Tech Debt & CI)

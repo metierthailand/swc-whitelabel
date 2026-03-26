@@ -74,6 +74,7 @@ impl<'a> SymbolScanner<'a> {
             return None;
         }
 
+        // TODO: remove resolution pass
         // 🎯 RESOLUTION PASS: The "Guess the Extension" Game
         let extensions = ["", "ts", "tsx", "js", "jsx", "./index.ts", "./index.tsx"];
         for base_path in base_paths_to_try {
@@ -191,7 +192,7 @@ impl<'a> Visit for SymbolScanner<'a> {
                                     let match_exact = match fs::canonicalize(&absolute_import_path)
                                     {
                                         Ok(path) => path == abs_resolved_path,
-                                        _ => true,
+                                        _ => false,
                                     };
 
                                     let match_parent = match fs::canonicalize(&absolute_import_path)
@@ -200,7 +201,7 @@ impl<'a> Visit for SymbolScanner<'a> {
                                         Ok(parent) => {
                                             parent.unwrap_or_default() == abs_resolved_path
                                         }
-                                        _ => true,
+                                        _ => false,
                                     };
 
                                     match_exact || match_parent

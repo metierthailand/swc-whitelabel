@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 use serde::Deserialize;
 use std::{cell::RefCell, env, fs, path::PathBuf};
 
@@ -17,6 +17,20 @@ pub struct WhitelabelConfig {
     pub cwd: PathBuf,
 }
 
+impl Default for WhitelabelConfig {
+    fn default() -> Self {
+        Self {
+            src: "app/".to_owned(),
+            patterns: vec!["**/*.tsx".to_owned(), "**/*.ts".to_owned()],
+            output_dir: "whitelabel".to_owned(),
+            default_target: "def".to_owned(),
+            tsconfig: "tsconfig.json".to_owned(),
+            output_file_name_only: Default::default(),
+            cwd: Default::default(),
+        }
+    }
+}
+
 fn tsconfig() -> String {
     "tsconfig.json".to_string()
 }
@@ -27,19 +41,20 @@ thread_local! {
 
 pub fn init(cwd: Option<PathBuf>, config_filename: &str) -> Result<()> {
     let resolved_cwd = cwd.map_or_else(env::current_dir, Ok)?;
-    let mut resolved_file = resolved_cwd.clone();
+    let mut config: WhitelabelConfig = {
+        let mut resolved_file = resolved_cwd.clone();
 
-    resolved_file.push(config_filename);
+        resolved_file.push(config_filename);
 
-    // Read the file to a string
-    let config_str = fs::read_to_string(&resolved_file).context(format!(
-        "Failed to read config file at {}",
-        resolved_file.display()
-    ))?;
-
-    // Deserialize the JSON string into our struct
-    let mut config: WhitelabelConfig = serde_json::from_str(&config_str)
-        .context("Failed to parse whitelabel.config.json. Is the JSON strictly valid?")?;
+        // Read the file to a string
+        if let Ok(config_str) = fs::read_to_string(&resolved_file)
+            && let Ok(config_from_json) = serde_json::from_str::<WhitelabelConfig>(&config_str)
+        {
+            config_from_json
+        } else {
+            Default::default()
+        }
+    };
 
     let mut resolved_tsconfig_path = resolved_cwd.clone();
     resolved_tsconfig_path.push(config.tsconfig);
