@@ -16,4 +16,5 @@ pub type Directive = Vec<Modifier>;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DirectiveError {
     ForOrWildcardConflict,
+    WildcardOrOptionalConflict,
 }

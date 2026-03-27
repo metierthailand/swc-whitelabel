@@ -17,10 +17,9 @@ use swc_core::{
 
 use swc_core::common::{GLOBALS, Globals};
 
-use crate::ast;
 use crate::config;
 use crate::generator;
-use crate::module;
+use crate::{ast, module::registry::WhitelabelRegistry};
 
 use crate::util::{create_reporter, report};
 
@@ -110,7 +109,8 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
             return Err(anyhow!("{:?}", collector.errors));
         }
 
-        let grouped_entries = module::registry::try_build_registry_maps(&collector)?;
+        let len = collector.entries.len();
+        let registry: WhitelabelRegistry = collector.try_into()?;
 
         report(|| {
             println!("🏗️ Starting whitelabel code generation...",);
@@ -119,8 +119,8 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
         let output_dir = root_dir.join(&cfg.output_dir);
         fs::create_dir_all(&output_dir)?;
 
-        for (target, entry) in &grouped_entries {
-            let output = generator::wl::generate(entry, *target == cfg.default_target);
+        for (target, entry) in registry.clone().into_iter() {
+            let output = generator::wl::generate(entry);
             let target_path = format!("{}/{}.generated.tsx", output_dir.display(), target);
             fs::write(&target_path, output)?;
 
@@ -131,60 +131,54 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
             modified_files.push(target_path);
         }
 
-        let target_path = output_dir.join("index.ts");
-        fs::write(
-            &target_path,
-            generator::index::generate(
-                grouped_entries.keys().collect(),
-                cfg.default_target.clone(),
-            ),
-        )?;
+        let target_path = output_dir.join("whitelabel.ts");
+        fs::write(&target_path, generator::whitelabel::generate(&registry))?;
 
         modified_files.push(target_path.to_string_lossy().to_string());
 
-        let determiner = output_dir.join("determine-whitelabel.ts");
+        let wrapper = output_dir.join("index.ts");
 
-        if determiner.exists() {
+        if wrapper.exists() {
             report(|| {
                 println!(
                     "🙈 Detected {}, skipped code generation.",
-                    determiner.display()
+                    wrapper.display()
                 );
             });
         } else {
             fs::write(
-                &determiner,
-                generator::determines_whitelabel::generate(cfg.default_target.clone()),
+                &wrapper,
+                generator::index::generate(cfg.default_target.clone()),
             )?;
-            modified_files.push(determiner.to_string_lossy().to_string());
+            modified_files.push(wrapper.to_string_lossy().to_string());
         }
 
         report(|| {
             println!(
                 "✅ Successfully generated whitelabel registry in {}/ with {} total entries.",
                 output_dir.display(),
-                collector.entries.len()
+                len
             );
             println!("🪄 Starting codemod pass to rewrite references...");
         });
 
-        // -----------------------------------------------------------------------------
-        // Codemod Pass: Rewrite References Across All Files
-        // -----------------------------------------------------------------------------
-        let codemod_modified_files = module::codemod::exec(&cm, collector)?;
+        // // -----------------------------------------------------------------------------
+        // // Codemod Pass: Rewrite References Across All Files
+        // // -----------------------------------------------------------------------------
+        // let codemod_modified_files = module::codemod::exec(&cm, collector)?;
 
-        modified_files.extend(codemod_modified_files);
+        // modified_files.extend(codemod_modified_files);
 
-        // TODO: renaming detection
-        // if !rename_map.is_empty() {
-        //     let renamed_files = module::rename_whitelabel::exec(&cm, &rename_map);
-        //     modified_files.extend(renamed_files);
-        // }
+        // // TODO: renaming detection
+        // // if !rename_map.is_empty() {
+        // //     let renamed_files = module::rename_whitelabel::exec(&cm, &rename_map);
+        // //     modified_files.extend(renamed_files);
+        // // }
 
-        report(|| {
-            // Friendly summary for human execution
-            println!("🧙 Done! Modified {} files.", modified_files.len());
-        });
+        // report(|| {
+        //     // Friendly summary for human execution
+        //     println!("🧙 Done! Modified {} files.", modified_files.len());
+        // });
 
         report_modified_files(Box::new(|| {
             // Print ONLY the file paths, one per line, so `xargs` can read it perfectly

@@ -179,7 +179,7 @@ impl<'a> WhitelabelCollector<'a> {
                 optional,
                 target: WhitelabelTarget::Wildcard,
                 key: final_key.clone(),
-                symbol: symbol.clone(),
+                symbol,
                 import_path: self.get_filename(span),
                 _experiment_remark: self.source_map.span_to_snippet(span).unwrap_or_default(),
             }),

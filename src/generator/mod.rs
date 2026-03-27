@@ -1,3 +1,3 @@
-pub mod determines_whitelabel;
 pub mod index;
+pub mod whitelabel;
 pub mod wl;
