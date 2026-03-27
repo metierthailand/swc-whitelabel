@@ -112,17 +112,17 @@ impl<'a> WhitelabelCollector<'a> {
                 if let Ok(directive_ast) = directive_ast_result {
                     let mut parsed_directive: WhitelabelDirective =
                         directive_ast
-                            .iter()
+                            .into_iter()
                             .fold(Default::default(), |mut wl, opt| {
                                 match opt {
-                                    ast::Modifier::Optional(b) => wl.optional = b.to_owned(),
+                                    ast::Modifier::Optional(b) => wl.optional = b,
                                     ast::Modifier::ForModifier(ast::ForModifier::For(t)) => {
-                                        wl.targets.push(t.to_owned());
+                                        wl.targets.push(t);
                                     }
                                     ast::Modifier::ForModifier(ast::ForModifier::Wildcard) => {
                                         wl.targets = WhitelabelTargets::Wildcard
                                     }
-                                    ast::Modifier::Key(k) => wl.key = Some(k.clone()),
+                                    ast::Modifier::Key(k) => wl.key = Some(k),
                                 };
                                 wl
                             });

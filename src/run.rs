@@ -119,6 +119,10 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
         let output_dir = root_dir.join(&cfg.output_dir);
         fs::create_dir_all(&output_dir)?;
 
+        let target_path = output_dir.join("whitelabel.ts");
+        fs::write(&target_path, generator::whitelabel::generate(&registry))?;
+        modified_files.push(target_path.to_string_lossy().to_string());
+
         for (target, entry) in registry.clone().into_iter() {
             let output = generator::wl::generate(entry);
             let target_path = format!("{}/{}.generated.tsx", output_dir.display(), target);
@@ -130,11 +134,6 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
 
             modified_files.push(target_path);
         }
-
-        let target_path = output_dir.join("whitelabel.ts");
-        fs::write(&target_path, generator::whitelabel::generate(&registry))?;
-
-        modified_files.push(target_path.to_string_lossy().to_string());
 
         let wrapper = output_dir.join("index.ts");
 

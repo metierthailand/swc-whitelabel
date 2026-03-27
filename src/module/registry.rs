@@ -118,19 +118,19 @@ impl TryFrom<WhitelabelCollector<'_>> for WhitelabelRegistry {
 
         let root_dir = with_config(|cfg| cfg.cwd.join(&cfg.src));
 
-        let entries = collector.entries.clone();
+        let entries = collector.entries;
 
         let (optional, implemented): (Vec<_>, Vec<_>) =
             entries.into_iter().partition(|p| p.optional);
 
         let (wildcards, targetted): (Vec<_>, Vec<_>) = implemented
-            .clone()
             .into_iter()
             .partition(|p| matches!(p.target, WhitelabelTarget::Wildcard));
 
         for entry in targetted {
-            let WhitelabelTarget::Targetted(target) = entry.target.clone() else {
-                return Err(anyhow!("Unexpected wildcard: {}", entry.target));
+            let target = match entry.target {
+                WhitelabelTarget::Targetted(t) => t,
+                other => return Err(anyhow!("Unexpected wildcard: {}", other)),
             };
 
             let pb = PathBuf::from(entry.import_path);
@@ -143,7 +143,7 @@ impl TryFrom<WhitelabelCollector<'_>> for WhitelabelRegistry {
             report(|| {
                 println!(
                     "\t🪡 ({}) found {} @ {}",
-                    entry.target, entry.symbol, rel_import_path
+                    target, entry.symbol, rel_import_path
                 );
             });
 
@@ -163,7 +163,7 @@ impl TryFrom<WhitelabelCollector<'_>> for WhitelabelRegistry {
                 .or_default() // Ensures the inner map exists
                 .entry(entry.key.clone())
                 .insert_entry(WhitelabelRecord {
-                    target,
+                    target: target.to_string(),
                     key: entry.key,
                     symbol: WhitelabelSymbol::Symbol {
                         symbol: entry.symbol,
@@ -183,11 +183,7 @@ impl TryFrom<WhitelabelCollector<'_>> for WhitelabelRegistry {
             let rel_import_path = relative_pb.to_string_lossy().to_string();
 
             report(|| {
-                println!(
-                    "\t🪡 (*) found {} @ {}",
-                    entry.symbol.clone(),
-                    rel_import_path
-                );
+                println!("\t🪡 (*) found {} @ {}", entry.symbol, rel_import_path);
             });
 
             for target in &targets {

@@ -44,8 +44,8 @@ pub fn compute_relative_import(current_file_dir: &Path, resolved_target: &Path) 
     Some(relative_str)
 }
 
-pub fn to_rel_import(current_dir: &Path, import_path: String) -> PathBuf {
-    let absolute_target = env::with_config(|cfg| cfg.cwd.join(&cfg.src).join(import_path.clone()));
+pub fn to_rel_import(current_dir: &Path, import_path: &str) -> PathBuf {
+    let absolute_target = env::with_config(|cfg| cfg.cwd.join(&cfg.src).join(import_path));
 
     match compute_relative_import(current_dir, &absolute_target) {
         Some(s) => PathBuf::from(s).with_extension(""),

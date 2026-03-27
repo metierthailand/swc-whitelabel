@@ -27,7 +27,7 @@ fn format_doc(entry: &[WhitelabelRecord]) -> String {
 
     let implementations = entry
         .iter()
-        .filter_map(|e| match e.symbol.clone() {
+        .filter_map(|e| match &e.symbol {
             WhitelabelSymbol::Symbol { .. } => Some(format!(
                 "{{@link {}_{:x} | `{}`}}",
                 e.target,
@@ -68,7 +68,7 @@ pub fn generate(registry: &WhitelabelRegistry) -> String {
         typedef.push_str(&format!("{}: ", key));
 
         for v in variants {
-            match v.symbol.clone() {
+            match &v.symbol {
                 WhitelabelSymbol::Symbol {
                     symbol,
                     import_path,
