@@ -37,8 +37,7 @@ impl TxFS {
                     Ok(original_content) => backups.push((path.clone(), original_content)),
                     Err(e) => {
                         // If we can't even read the file to back it up, abort the whole transaction
-                        return Err(io::Error::new(
-                            io::ErrorKind::Other,
+                        return Err(io::Error::other(
                             format!(
                                 "Transaction aborted: Failed to backup {}: {}",
                                 path.display(),

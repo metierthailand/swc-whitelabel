@@ -27,7 +27,7 @@ fn format_doc(entry: &Vec<WhitelabelRecord>) -> String {
 
     let implementations = entry
         .iter()
-        .map(|e| match e.symbol.clone() {
+        .filter_map(|e| match e.symbol.clone() {
             WhitelabelSymbol::Symbol { .. } => Some(format!(
                 "{{@link {}_{:x} | `{}`}}",
                 e.target,
@@ -36,8 +36,6 @@ fn format_doc(entry: &Vec<WhitelabelRecord>) -> String {
             )),
             WhitelabelSymbol::Undefined => None,
         })
-        .filter(|e| e.is_some())
-        .map(|s| s.unwrap())
         .collect::<Vec<_>>();
 
     format!(
@@ -85,7 +83,7 @@ pub fn generate(registry: &WhitelabelRegistry) -> String {
                     typedef.push_str(&format!("| typeof {}_{:x}", v.target, v.symbol.short_id()));
                 }
                 WhitelabelSymbol::Undefined => {
-                    typedef.push_str(&format!("| undefined"));
+                    typedef.push_str("| undefined");
                 }
             }
         }
