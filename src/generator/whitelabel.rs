@@ -4,7 +4,7 @@ use crate::{
     util::to_rel_import,
 };
 
-fn format_doc(entry: &Vec<WhitelabelRecord>) -> String {
+fn format_doc(entry: &[WhitelabelRecord]) -> String {
     let default_value = with_config(|cfg| {
         if let Some(e) = entry.iter().find(|e| e.target == cfg.default_target) {
             return format!(

@@ -17,9 +17,9 @@ use swc_core::{
 
 use swc_core::common::{GLOBALS, Globals};
 
-use crate::config;
 use crate::generator;
 use crate::{ast, module::registry::WhitelabelRegistry};
+use crate::{config, module};
 
 use crate::util::{create_reporter, report};
 
@@ -162,23 +162,23 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
             println!("🪄 Starting codemod pass to rewrite references...");
         });
 
-        // // -----------------------------------------------------------------------------
-        // // Codemod Pass: Rewrite References Across All Files
-        // // -----------------------------------------------------------------------------
-        // let codemod_modified_files = module::codemod::exec(&cm, collector)?;
+        // -----------------------------------------------------------------------------
+        // Codemod Pass: Rewrite References Across All Files
+        // -----------------------------------------------------------------------------
+        let codemod_modified_files = module::codemod::exec(&cm, &registry)?;
 
-        // modified_files.extend(codemod_modified_files);
+        modified_files.extend(codemod_modified_files);
 
-        // // TODO: renaming detection
-        // // if !rename_map.is_empty() {
-        // //     let renamed_files = module::rename_whitelabel::exec(&cm, &rename_map);
-        // //     modified_files.extend(renamed_files);
-        // // }
+        // TODO: renaming detection
+        // if !rename_map.is_empty() {
+        //     let renamed_files = module::rename_whitelabel::exec(&cm, &rename_map);
+        //     modified_files.extend(renamed_files);
+        // }
 
-        // report(|| {
-        //     // Friendly summary for human execution
-        //     println!("🧙 Done! Modified {} files.", modified_files.len());
-        // });
+        report(|| {
+            // Friendly summary for human execution
+            println!("🧙 Done! Modified {} files.", modified_files.len());
+        });
 
         report_modified_files(Box::new(|| {
             // Print ONLY the file paths, one per line, so `xargs` can read it perfectly

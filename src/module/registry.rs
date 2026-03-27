@@ -1,9 +1,10 @@
 use anyhow::{Error, anyhow};
 use std::collections::HashSet;
+use std::fs;
 use std::{collections::HashMap, path::PathBuf};
 
-use crate::ast::collector::{WhitelabelCollector, WhitelabelTarget};
-use crate::config::env::with_config;
+use crate::ast::collector::{WhitelabelCollector, WhitelabelEntry, WhitelabelTarget};
+use crate::config::env::{self, with_config};
 use crate::util::report;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
@@ -40,23 +41,13 @@ type Key = String;
 #[derive(Clone)]
 pub struct WhitelabelRegistry {
     table: HashMap<Target, HashMap<Key, WhitelabelRecord>>,
+    pivoted: HashMap<Key, HashSet<WhitelabelRecord>>,
 }
 
 impl WhitelabelRegistry {
     pub fn by_keys(&self) -> Vec<(String, Vec<WhitelabelRecord>)> {
-        let mut pivoted_map: HashMap<Key, HashSet<WhitelabelRecord>> = HashMap::new();
-
-        // We use into_iter() to move the data, avoiding deep copies of the records
-        for inner_map in self.table.values() {
-            for (key, record) in inner_map.iter() {
-                pivoted_map
-                    .entry(key.clone())
-                    .or_default()
-                    .insert(record.clone());
-            }
-        }
-
-        pivoted_map
+        self.pivoted
+            .clone()
             .into_iter()
             .map(|(key, records)| (key, records.into_iter().collect::<Vec<_>>()))
             .collect::<Vec<_>>()
@@ -64,6 +55,58 @@ impl WhitelabelRegistry {
 
     pub fn targets(&self) -> Vec<&String> {
         self.table.keys().collect()
+    }
+
+    pub fn lookup(&self, name: &String, path: &PathBuf) -> Option<WhitelabelEntry> {
+        let entries = self.pivoted.get(name)?;
+
+        let import_match = entries.iter().find(|entry| match fs::canonicalize(path) {
+            Ok(abs_resolved_path) => {
+                let WhitelabelSymbol::Symbol {
+                    symbol: _,
+                    import_path,
+                } = &entry.symbol
+                else {
+                    return false;
+                };
+
+                let absolute_import_path =
+                    env::with_config(|cfg| cfg.cwd.join(&cfg.src).join(import_path));
+
+                let match_exact = match fs::canonicalize(&absolute_import_path) {
+                    Ok(path) => path == abs_resolved_path,
+                    _ => false,
+                };
+
+                let match_parent = match fs::canonicalize(&absolute_import_path)
+                    .map(|pb| pb.parent().map(|parent| parent.to_path_buf()))
+                {
+                    Ok(parent) => parent.unwrap_or_default() == abs_resolved_path,
+                    _ => false,
+                };
+
+                match_exact || match_parent
+            }
+            _ => false,
+        });
+
+        match import_match {
+            Some(e) => match &e.symbol {
+                WhitelabelSymbol::Symbol {
+                    symbol,
+                    import_path,
+                } => Some(WhitelabelEntry {
+                    target: WhitelabelTarget::Targetted(e.target.to_owned()),
+                    key: e.key.to_owned(),
+                    symbol: symbol.to_owned(),
+                    import_path: import_path.to_owned(),
+                    _experiment_remark: e.remark.to_owned(),
+                    optional: false,
+                }),
+                WhitelabelSymbol::Undefined => None,
+            },
+            None => None,
+        }
     }
 }
 
@@ -244,8 +287,21 @@ impl TryFrom<WhitelabelCollector<'_>> for WhitelabelRegistry {
             return Err(anyhow!("Missing keys: {:?}", missing_keys));
         }
 
+        let mut pivoted: HashMap<Key, HashSet<WhitelabelRecord>> = HashMap::new();
+
+        // We use into_iter() to move the data, avoiding deep copies of the records
+        for inner_map in grouped_entries.values() {
+            for (key, record) in inner_map.iter() {
+                pivoted
+                    .entry(key.clone())
+                    .or_default()
+                    .insert(record.clone());
+            }
+        }
+
         Ok(WhitelabelRegistry {
             table: grouped_entries,
+            pivoted,
         })
     }
 }

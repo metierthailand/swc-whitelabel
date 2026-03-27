@@ -1,5 +1,4 @@
 use anyhow::Result;
-use std::collections::HashMap;
 use std::fs;
 use swc_core::common::SourceFile;
 use swc_core::{
@@ -13,25 +12,16 @@ use swc_core::{
     },
 };
 
-use crate::ast::collector::{WhitelabelCollector, WhitelabelEntry};
 use crate::ast::rewriter::WhitelabelRewriter;
 use crate::ast::scanner::SymbolScanner;
 use crate::config::{env, tsconfig};
+use crate::module::registry::WhitelabelRegistry;
 use crate::util::report;
 
-pub fn exec(cm: &Lrc<SourceMap>, collector: WhitelabelCollector<'_>) -> Result<Vec<String>> {
-    let mut global_symbols: HashMap<String, Vec<WhitelabelEntry>> = HashMap::new();
+pub fn exec(cm: &Lrc<SourceMap>, registry: &WhitelabelRegistry) -> Result<Vec<String>> {
     let mut modified_files: Vec<String> = Vec::new();
     let ts_cfg = env::with_config(|cfg| tsconfig::load(cfg.tsconfig.clone()))?;
     let output_dir = env::with_config(|cfg| cfg.output_dir.clone());
-
-    // 🎯 IDIOMATIC: Consuming the iterator (Value Move)
-    for entry in collector.entries.into_iter() {
-        global_symbols
-            .entry(entry.symbol.clone())
-            .or_default()
-            .push(entry); // The struct is MOVED, not cloned!
-    }
 
     let files: Vec<Lrc<SourceFile>> = {
         // 🔒 Acquire the lock
@@ -68,8 +58,7 @@ pub fn exec(cm: &Lrc<SourceMap>, collector: WhitelabelCollector<'_>) -> Result<V
         program.visit_mut_with(&mut resolver(unresolved_mark, top_level_mark, false));
 
         use swc_core::ecma::visit::VisitWith;
-        let mut scanner =
-            SymbolScanner::new(&global_symbols, cm.clone(), &ts_cfg.compiler_options.paths);
+        let mut scanner = SymbolScanner::new(registry, cm.clone(), &ts_cfg.compiler_options.paths);
         program.visit_with(&mut scanner);
 
         if scanner.target_ids.is_empty() {
