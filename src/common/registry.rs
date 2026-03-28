@@ -57,11 +57,11 @@ impl WhitelabelRegistry {
     }
 
     pub fn get_target_entries(&self, target: &String) -> Vec<&WhitelabelRecord> {
-        return self
+        self
             .table
             .get(target)
             .map(|r| r.values().collect::<Vec<_>>())
-            .unwrap_or_default();
+            .unwrap_or_default()
     }
 
     pub fn lookup(&self, name: &String, path: &PathBuf) -> Option<WhitelabelEntry> {

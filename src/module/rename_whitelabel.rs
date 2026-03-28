@@ -15,6 +15,7 @@ use swc_core::{
 
 use crate::ast;
 
+#[allow(unused)]
 pub fn exec(cm: &Lrc<SourceMap>, rename_map: &HashMap<String, String>) -> Result<Vec<String>> {
     let comments = SingleThreadedComments::default();
     let mut modified_files: Vec<String> = Vec::new();

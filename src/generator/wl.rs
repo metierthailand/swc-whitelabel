@@ -33,7 +33,7 @@ import type { WhitelabelConfig } from '.';"#,
               "#,
                 entry.key,
                 entry.key,
-                to_rel_import(&current_dir, &import_path).to_string_lossy(),
+                to_rel_import(&current_dir, import_path).to_string_lossy(),
                 symbol
             ),
             WhitelabelSymbol::Undefined => format!(

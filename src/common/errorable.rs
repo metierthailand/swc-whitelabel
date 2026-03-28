@@ -4,7 +4,7 @@ use anyhow::Result;
 
 pub trait Errorable<T = ()> {
     fn into_result(self) -> Result<T>;
-    fn format_multiple_errors<E: Debug>(&self, errors: &Vec<E>) -> String {
+    fn format_multiple_errors<E: Debug>(&self, errors: &[E]) -> String {
         errors
             .iter()
             .map(|e| format!("- {:?}", e))
