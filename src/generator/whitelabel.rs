@@ -109,7 +109,7 @@ pub fn generate(registry: &WhitelabelRegistry) -> String {
     );
 
     let mut targets = registry.targets();
-    targets.sort_by(|a, b| a.cmp(b));
+    targets.sort();
 
     let mut unions = String::from("export type Variants =");
     for target in targets.clone() {
