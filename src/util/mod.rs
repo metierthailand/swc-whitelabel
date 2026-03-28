@@ -53,4 +53,14 @@ pub fn to_rel_import(current_dir: &Path, import_path: &str) -> PathBuf {
     }
 }
 
+pub fn cname(input: PathBuf) -> Option<PathBuf> {
+    let file_name = input.file_name().unwrap();
+    let clean_dir = input.parent().and_then(|dir| dir.canonicalize().ok());
+
+    return clean_dir.map(|mut p| {
+        p.push(file_name);
+        p
+    });
+}
+
 pub mod transactional;

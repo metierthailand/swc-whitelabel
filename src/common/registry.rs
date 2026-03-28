@@ -1,11 +1,10 @@
 use anyhow::{Error, anyhow};
 use std::collections::HashSet;
-use std::fs;
 use std::{collections::HashMap, path::PathBuf};
 
 use crate::ast::collector::{WhitelabelEntry, WhitelabelTarget};
 use crate::config::env::{self, with_config};
-use crate::util::report;
+use crate::util::{cname, report};
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
@@ -69,7 +68,7 @@ impl WhitelabelRegistry {
             .unwrap_or_default()
     }
 
-    pub fn lookup(&self, name: &String, path: &PathBuf) -> Option<WhitelabelEntry> {
+    pub fn lookup(&self, name: &String, abs_resolved_path: &PathBuf) -> Option<WhitelabelEntry> {
         let entries = self.pivoted.get(name).map(|targets| {
             targets
                 .iter()
@@ -77,34 +76,32 @@ impl WhitelabelRegistry {
                 .collect::<Vec<_>>()
         })?;
 
-        let import_match = entries.iter().find(|entry| match fs::canonicalize(path) {
-            Ok(abs_resolved_path) => {
-                let WhitelabelSymbol::Symbol {
-                    symbol: _,
-                    import_path,
-                } = &entry.symbol
-                else {
-                    return false;
-                };
+        let import_match = entries.iter().find(|entry| {
+            let WhitelabelSymbol::Symbol {
+                symbol: _,
+                import_path,
+            } = &entry.symbol
+            else {
+                return false;
+            };
 
-                let absolute_import_path =
-                    env::with_config(|cfg| cfg.cwd.join(&cfg.src).join(import_path));
+            let Some(absolute_import_path) = env::with_config(|cfg| {
+                cname(cfg.cwd.join(&cfg.src).join(import_path).with_extension(""))
+            }) else {
+                return false;
+            };
 
-                let match_exact = match fs::canonicalize(&absolute_import_path) {
-                    Ok(path) => path == abs_resolved_path,
-                    _ => false,
-                };
+            let match_exact = absolute_import_path == *abs_resolved_path;
 
-                let match_parent = match fs::canonicalize(&absolute_import_path)
-                    .map(|pb| pb.parent().map(|parent| parent.to_path_buf()))
-                {
-                    Ok(parent) => parent.unwrap_or_default() == abs_resolved_path,
-                    _ => false,
-                };
+            let match_parent = match absolute_import_path
+                .parent()
+                .map(|parent| parent.to_path_buf())
+            {
+                Some(parent) => parent == *abs_resolved_path,
+                _ => false,
+            };
 
-                match_exact || match_parent
-            }
-            _ => false,
+            match_exact || match_parent
         });
 
         match import_match {

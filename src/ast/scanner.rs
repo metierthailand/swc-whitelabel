@@ -11,7 +11,7 @@ use swc_core::ecma::{
 use crate::common::errorable::Errorable;
 use crate::common::registry::WhitelabelRegistry;
 use crate::config::env;
-use crate::util::report;
+use crate::util::{cname, report};
 
 // Scans the file for imports or local declarations that match known whitelabel symbols
 pub struct SymbolScanner<'a> {
@@ -52,20 +52,18 @@ impl<'a> SymbolScanner<'a> {
     /// Fully respects relative imports and tsconfig.json `paths` aliases.
     fn resolve_import(&self, current_file_path: PathBuf, import_src: &str) -> Option<PathBuf> {
         let cwd = env::with_config(|cfg| cfg.cwd.clone());
-        let mut base_paths_to_try = Vec::new();
 
         // 🎯 CATEGORY 1: Relative Import (Bypasses TS paths)
         if import_src.starts_with('.')
             && let Some(parent) = current_file_path.parent()
         {
-            base_paths_to_try.push(parent.join(import_src));
+            return cname(parent.join(import_src));
         }
         /* 🎯 CATEGORY 2: TSConfig Path Resolution */
         // Step 1: Check for an EXACT match (e.g., "@/app/whitelabel")
         else if let Some(mapped_paths) = self.path_mapping.get(import_src) {
-            for mapped_path in mapped_paths {
-                base_paths_to_try.push(cwd.join(mapped_path));
-            }
+            // Only first in record
+            return cwd.join(&mapped_paths[0]).canonicalize().ok();
         }
         // Step 2: Check for a WILDCARD match (e.g., "@app/*")
         else if let Some((pattern, mapped_paths, _)) = self.best_path_mapping_match(import_src)
@@ -77,35 +75,14 @@ impl<'a> SymbolScanner<'a> {
             // Extract the string that replaces the '*'
             let wildcard_match = &import_src[prefix.len()..import_src.len() - suffix.len()];
 
-            for mapped_path in mapped_paths {
-                // Inject the matched string into the mapped path's '*'
-                let resolved_mapped = mapped_path.replace("*", wildcard_match);
-                base_paths_to_try.push(cwd.join(resolved_mapped));
-            }
-        } else {
-            // TODO node_modules / turbo repo
-            return None;
+            let first = mapped_paths[0].to_owned();
+            let resolved_mapped = first.replace("*", wildcard_match);
+
+            return cwd.join(resolved_mapped).canonicalize().ok();
         }
 
-        // TODO: remove resolution pass
-        // 🎯 RESOLUTION PASS: The "Guess the Extension" Game
-        let extensions = ["", "ts", "tsx", "js", "jsx", "./index.ts", "./index.tsx"];
-        for base_path in base_paths_to_try {
-            for ext in extensions {
-                let attempt = if ext.contains("/") {
-                    base_path.join(ext)
-                } else {
-                    base_path.with_added_extension(ext)
-                };
-
-                if attempt.exists() {
-                    // canonicalize() mathematically resolves `../` and `./`
-                    return attempt.canonicalize().ok();
-                }
-            }
-        }
-
-        None
+        // TODO node_modules / turbo repo
+        return None;
     }
 
     fn best_path_mapping_match(&self, import_src: &str) -> Option<(&String, &Vec<String>, usize)> {
@@ -118,7 +95,7 @@ impl<'a> SymbolScanner<'a> {
                 if import_src.starts_with(prefix) && import_src.ends_with(suffix) {
                     let match_len = prefix.len() + suffix.len();
                     // TypeScript Rule: Longest prefix match wins!
-                    if best_match.is_none_or(|best| match_len > best.2) {
+                    if best_match.is_none_or(|(_, _, size)| match_len > size) {
                         best_match = Some((pattern, mapped_paths, match_len));
                     }
                 }
@@ -197,9 +174,11 @@ impl<'a> Visit for SymbolScanner<'a> {
         if let Pat::Ident(ident) = &decl.name
             && let name = ident.id.sym.to_string()
             && let Some(current_file_name) = &self.current_file_name
+            && let Some(resolved_current_file_name) =
+                cname(PathBuf::from(&current_file_name.to_string()))
             && let Some(entry) = self
                 .registry
-                .lookup(&name, &current_file_name.to_string().into())
+                .lookup(&name, &resolved_current_file_name.with_extension(""))
         {
             report(|| {
                 if let Some(file_name) = self.current_file_name.as_ref() {
