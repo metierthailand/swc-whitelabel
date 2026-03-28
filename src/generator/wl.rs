@@ -1,10 +1,10 @@
 use crate::{
+    common::registry::{WhitelabelRecord, WhitelabelSymbol},
     config::env,
-    module::registry::{WhitelabelRecord, WhitelabelSymbol},
     util::to_rel_import,
 };
 
-pub fn generate(entries: Vec<WhitelabelRecord>) -> String {
+pub fn generate(entries: Vec<&WhitelabelRecord>) -> String {
     let current_dir = env::with_config(|cfg| cfg.cwd.join(&cfg.src).join(&cfg.output_dir));
 
     let mut output = String::new();
@@ -22,7 +22,7 @@ import type { WhitelabelConfig } from '.';"#,
 
     output.push_str("\nexport class whitelabel implements WhitelabelConfig {\n");
     for entry in sorted {
-        let getter = match entry.symbol {
+        let getter = match &entry.symbol {
             WhitelabelSymbol::Symbol {
                 symbol,
                 import_path,

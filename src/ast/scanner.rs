@@ -8,9 +8,9 @@ use swc_core::ecma::{
     visit::{Visit, VisitWith},
 };
 
-use crate::ast::errorable::Errorable;
+use crate::common::errorable::Errorable;
+use crate::common::registry::WhitelabelRegistry;
 use crate::config::env;
-use crate::module::registry::WhitelabelRegistry;
 use crate::util::report;
 
 // Scans the file for imports or local declarations that match known whitelabel symbols
@@ -23,12 +23,12 @@ pub struct SymbolScanner<'a> {
     errors: Vec<Error>,
 }
 
-impl<'a> Errorable for SymbolScanner<'a> {
-    fn result(&self) -> anyhow::Result<()> {
+impl<'a> Errorable<HashMap<Id, String>> for SymbolScanner<'a> {
+    fn into_result(self) -> anyhow::Result<HashMap<Id, String>> {
         if !self.errors.is_empty() {
             return Err(anyhow!("{}", self.format_multiple_errors(&self.errors)));
         }
-        Ok(())
+        Ok(self.target_ids)
     }
 }
 

@@ -3,8 +3,7 @@ use std::collections::HashSet;
 use std::fs;
 use std::{collections::HashMap, path::PathBuf};
 
-use crate::ast::collector::{WhitelabelCollector, WhitelabelEntry, WhitelabelTarget};
-use crate::ast::errorable::Errorable;
+use crate::ast::collector::{WhitelabelEntry, WhitelabelTarget};
 use crate::config::env::{self, with_config};
 use crate::util::report;
 use std::collections::hash_map::DefaultHasher;
@@ -46,16 +45,23 @@ pub struct WhitelabelRegistry {
 }
 
 impl WhitelabelRegistry {
-    pub fn by_keys(&self) -> Vec<(String, Vec<WhitelabelRecord>)> {
+    pub fn by_keys(&self) -> Vec<(&String, Vec<&WhitelabelRecord>)> {
         self.pivoted
-            .clone()
-            .into_iter()
-            .map(|(key, records)| (key, records.into_iter().collect::<Vec<_>>()))
+            .iter()
+            .map(|(key, records)| (key, records.iter().collect::<Vec<_>>()))
             .collect::<Vec<_>>()
     }
 
     pub fn targets(&self) -> Vec<&String> {
         self.table.keys().collect()
+    }
+
+    pub fn get_target_entries(&self, target: &String) -> Vec<&WhitelabelRecord> {
+        return self
+            .table
+            .get(target)
+            .map(|r| r.values().collect::<Vec<_>>())
+            .unwrap_or_default();
     }
 
     pub fn lookup(&self, name: &String, path: &PathBuf) -> Option<WhitelabelEntry> {
@@ -111,15 +117,13 @@ impl WhitelabelRegistry {
     }
 }
 
-impl TryFrom<WhitelabelCollector<'_>> for WhitelabelRegistry {
+impl TryFrom<Vec<WhitelabelEntry>> for WhitelabelRegistry {
     type Error = Error;
 
-    fn try_from(collector: WhitelabelCollector<'_>) -> std::result::Result<Self, Self::Error> {
+    fn try_from(entries: Vec<WhitelabelEntry>) -> std::result::Result<Self, Self::Error> {
         let mut grouped_entries: HashMap<Target, HashMap<Key, WhitelabelRecord>> = HashMap::new();
 
         let root_dir = with_config(|cfg| cfg.cwd.join(&cfg.src));
-
-        let entries = collector.result()?;
 
         let (optional, implemented): (Vec<_>, Vec<_>) =
             entries.into_iter().partition(|p| p.optional);
@@ -137,7 +141,7 @@ impl TryFrom<WhitelabelCollector<'_>> for WhitelabelRegistry {
             let pb = PathBuf::from(entry.import_path);
 
             // Safely strip the absolute project root to guarantee a relative snapshot path
-            let relative_pb = pb.strip_prefix(root_dir.clone()).unwrap_or(&pb);
+            let relative_pb = pb.strip_prefix(&root_dir).unwrap_or(&pb);
 
             let rel_import_path = relative_pb.to_string_lossy().to_string();
 
@@ -265,18 +269,18 @@ impl TryFrom<WhitelabelCollector<'_>> for WhitelabelRegistry {
             }
         }
 
-        let all_keys: HashSet<String> = grouped_entries
+        let all_keys: HashSet<&String> = grouped_entries
             .values()
-            .flat_map(|inner_map| inner_map.keys().cloned())
+            .flat_map(|inner_map| inner_map.keys())
             .collect();
 
-        let missing_keys: Vec<(Target, Key)> = grouped_entries
+        let missing_keys: Vec<(&Target, &Key)> = grouped_entries
             .iter()
             .flat_map(|(target, inner_map)| {
                 all_keys
                     .iter()
-                    .filter(move |&key| !inner_map.contains_key(key))
-                    .map(move |key| (target.clone(), key.clone()))
+                    .filter(move |&&key| !inner_map.contains_key(key))
+                    .map(move |&key| (target, key))
             })
             .collect();
 

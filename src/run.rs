@@ -17,8 +17,8 @@ use swc_core::{
 
 use swc_core::common::{GLOBALS, Globals};
 
-use crate::{ast, module::registry::WhitelabelRegistry};
-use crate::{ast::errorable::Errorable, generator};
+use crate::{ast, common::registry::WhitelabelRegistry};
+use crate::{common::errorable::Errorable, generator};
 use crate::{config, module};
 
 use crate::util::{create_reporter, report};
@@ -102,10 +102,10 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
             module.visit_with(&mut collector);
         }
 
-        let entries = collector.result()?;
+        let entries = collector.into_result()?;
 
         let len = entries.len();
-        let registry: WhitelabelRegistry = collector.try_into()?;
+        let registry: WhitelabelRegistry = entries.try_into()?;
 
         report(|| {
             println!("🏗️ Starting whitelabel code generation...",);
@@ -118,7 +118,9 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
         fs::write(&target_path, generator::whitelabel::generate(&registry))?;
         modified_files.push(target_path.to_string_lossy().to_string());
 
-        for (target, entry) in registry.clone().into_iter() {
+        for target in registry.targets() {
+            let entry = registry.get_target_entries(target);
+
             let output = generator::wl::generate(entry);
             let target_path = format!("{}/{}.generated.tsx", output_dir.display(), target);
             fs::write(&target_path, output)?;

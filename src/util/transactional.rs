@@ -37,21 +37,19 @@ impl TxFS {
                     Ok(original_content) => backups.push((path.clone(), original_content)),
                     Err(e) => {
                         // If we can't even read the file to back it up, abort the whole transaction
-                        return Err(io::Error::other(
-                            format!(
-                                "Transaction aborted: Failed to backup {}: {}",
-                                path.display(),
-                                e
-                            ),
-                        ));
+                        return Err(io::Error::other(format!(
+                            "Transaction aborted: Failed to backup {}: {}",
+                            path.display(),
+                            e
+                        )));
                     }
                 }
             }
         }
-
+        let writes = std::mem::take(&mut self.pending_writes);
         // 2. Execute the writes
-        for (path, new_content) in &self.pending_writes.to_owned() {
-            if let Err(write_err) = fs::write(path, new_content) {
+        for (path, new_content) in writes {
+            if let Err(write_err) = fs::write(&path, new_content) {
                 // 3. 🚨 ROLLBACK TRIGGERED 🚨
                 // A write failed! Restore all the files we modified so far.
                 for (backup_path, original_content) in backups {
@@ -63,7 +61,7 @@ impl TxFS {
                 return Err(io::Error::new(
                     io::ErrorKind::Interrupted,
                     format!(
-                        "Transaction failed on {}. Rolled back previous writes. Error: {}",
+                        "Transaction failed on {:?}. Rolled back previous writes. Error: {}",
                         path.display(),
                         write_err
                     ),

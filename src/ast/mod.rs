@@ -1,5 +1,4 @@
 pub mod collector;
-pub mod errorable;
 pub mod parser;
 pub mod rename;
 pub mod rewriter;

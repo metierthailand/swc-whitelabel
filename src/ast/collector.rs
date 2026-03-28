@@ -17,7 +17,7 @@ use swc_core::{
     },
 };
 
-use crate::ast::{errorable::Errorable, parser::ast};
+use crate::{ast::parser::ast, common::errorable::Errorable};
 use crate::{ast::parser::directive::DirectiveRuleParser, config::env, util};
 
 #[derive(Clone)]
@@ -90,7 +90,7 @@ pub struct WhitelabelCollector<'a> {
 }
 
 impl<'a> Errorable<Vec<WhitelabelEntry>> for WhitelabelCollector<'a> {
-    fn result(&self) -> anyhow::Result<Vec<WhitelabelEntry>> {
+    fn into_result(self) -> anyhow::Result<Vec<WhitelabelEntry>> {
         if !self.errors.is_empty() {
             return Err(anyhow!("{}", self.format_multiple_errors(&self.errors)));
         }

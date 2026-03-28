@@ -12,11 +12,10 @@ use swc_core::{
     },
 };
 
-use crate::ast::errorable::Errorable;
 use crate::ast::rewriter::WhitelabelRewriter;
 use crate::ast::scanner::SymbolScanner;
+use crate::common::{errorable::Errorable, registry::WhitelabelRegistry};
 use crate::config::{env, tsconfig};
-use crate::module::registry::WhitelabelRegistry;
 use crate::util::report;
 
 pub fn exec(cm: &Lrc<SourceMap>, registry: &WhitelabelRegistry) -> Result<Vec<String>> {
@@ -62,16 +61,16 @@ pub fn exec(cm: &Lrc<SourceMap>, registry: &WhitelabelRegistry) -> Result<Vec<St
         let mut scanner = SymbolScanner::new(registry, cm.clone(), &ts_cfg.compiler_options.paths);
         program.visit_with(&mut scanner);
 
-        let _ = scanner.result()?;
+        let target_ids = scanner.into_result()?;
 
-        if scanner.target_ids.is_empty() {
+        if target_ids.is_empty() {
             continue;
         }
 
-        let mut rewriter = WhitelabelRewriter::new(cm.clone(), scanner.target_ids, false);
+        let mut rewriter = WhitelabelRewriter::new(cm.clone(), target_ids, false);
         program.visit_mut_with(&mut rewriter);
 
-        if rewriter.result()? {
+        if rewriter.into_result()? {
             let filename = fm.name.to_string();
             let mut buf = vec![];
             let mut emitter = Emitter {

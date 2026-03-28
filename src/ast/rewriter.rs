@@ -7,7 +7,7 @@ use swc_core::ecma::{
     visit::{VisitMut, VisitMutWith, noop_visit_mut_type},
 };
 
-use crate::ast::errorable::Errorable;
+use crate::common::errorable::Errorable;
 use crate::config::env;
 use crate::util::{self};
 
@@ -22,7 +22,7 @@ pub struct WhitelabelRewriter {
 const KEYWORD: &[u8] = b"whitelabel";
 
 impl Errorable<bool> for WhitelabelRewriter {
-    fn result(&self) -> anyhow::Result<bool> {
+    fn into_result(self) -> anyhow::Result<bool> {
         if !self.errors.is_empty() {
             return Err(anyhow!("{}", self.format_multiple_errors(&self.errors)));
         }

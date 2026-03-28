@@ -1,10 +1,10 @@
 use crate::{
+    common::registry::{WhitelabelRecord, WhitelabelRegistry, WhitelabelSymbol},
     config::env::{self, with_config},
-    module::registry::{WhitelabelRecord, WhitelabelRegistry, WhitelabelSymbol},
     util::to_rel_import,
 };
 
-fn format_doc(entry: &[WhitelabelRecord]) -> String {
+fn format_doc(entry: &[&WhitelabelRecord]) -> String {
     let default_value = with_config(|cfg| {
         if let Some(e) = entry.iter().find(|e| e.target == cfg.default_target) {
             return format!(
