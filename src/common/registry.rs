@@ -41,15 +41,21 @@ type Key = String;
 #[derive(Clone)]
 pub struct WhitelabelRegistry {
     table: HashMap<Target, HashMap<Key, WhitelabelRecord>>,
-    pivoted: HashMap<Key, HashSet<WhitelabelRecord>>,
+    pivoted: HashMap<Key, HashSet<Target>>,
 }
 
 impl WhitelabelRegistry {
     pub fn by_keys(&self) -> Vec<(&String, Vec<&WhitelabelRecord>)> {
         self.pivoted
             .iter()
-            .map(|(key, records)| (key, records.iter().collect::<Vec<_>>()))
-            .collect::<Vec<_>>()
+            .map(|(key, targets)| {
+                let records = targets
+                    .iter()
+                    .filter_map(|t| self.table.get(t)?.get(key))
+                    .collect::<Vec<_>>();
+                (key, records)
+            })
+            .collect()
     }
 
     pub fn targets(&self) -> Vec<&String> {
@@ -57,15 +63,21 @@ impl WhitelabelRegistry {
     }
 
     pub fn get_target_entries(&self, target: &String) -> Vec<&WhitelabelRecord> {
-        self
-            .table
+        self.table
             .get(target)
             .map(|r| r.values().collect::<Vec<_>>())
             .unwrap_or_default()
     }
 
     pub fn lookup(&self, name: &String, path: &PathBuf) -> Option<WhitelabelEntry> {
-        let entries = self.pivoted.get(name)?;
+        let Some(entries) = self.pivoted.get(name).map(|targets| {
+            targets
+                .iter()
+                .filter_map(|t| self.table.get(t)?.get(name))
+                .collect::<Vec<_>>()
+        }) else {
+            return None;
+        };
 
         let import_match = entries.iter().find(|entry| match fs::canonicalize(path) {
             Ok(abs_resolved_path) => {
@@ -295,15 +307,14 @@ impl TryFrom<Vec<WhitelabelEntry>> for WhitelabelRegistry {
             ));
         }
 
-        let mut pivoted: HashMap<Key, HashSet<WhitelabelRecord>> = HashMap::new();
+        let mut pivoted: HashMap<Key, HashSet<Target>> = HashMap::new();
 
-        // We use into_iter() to move the data, avoiding deep copies of the records
         for inner_map in grouped_entries.values() {
             for (key, record) in inner_map.iter() {
                 pivoted
                     .entry(key.clone())
                     .or_default()
-                    .insert(record.clone());
+                    .insert(record.target.clone()); // Insert target string, not the record!
             }
         }
 

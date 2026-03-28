@@ -14,7 +14,7 @@ console.log(whitelabel.foo);
 
 // AUTO-GENERATED: DO NOT EDIT
 
-import type { WhitelabelConfig } from ".";
+import type { WhitelabelConfig } from "./whitelabel";
 export class whitelabel implements WhitelabelConfig {
   public get foo(): WhitelabelConfig["foo"] {
     return require("../src").foo;

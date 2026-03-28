@@ -13,12 +13,12 @@ pub fn generate(entries: Vec<&WhitelabelRecord>) -> String {
 
 // AUTO-GENERATED: DO NOT EDIT
 
-import type { WhitelabelConfig } from '.';"#,
+import type { WhitelabelConfig } from './whitelabel';"#,
     );
 
     let mut sorted = entries;
 
-    sorted.sort_by_key(|e| e.key.clone());
+    sorted.sort_by(|a, b| a.key.cmp(&b.key));
 
     output.push_str("\nexport class whitelabel implements WhitelabelConfig {\n");
     for entry in sorted {

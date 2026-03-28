@@ -82,7 +82,7 @@ impl VisitMut for WhitelabelRewriter {
                     DUMMY_SP,
                     Default::default(),
                 ))),
-                prop: MemberProp::Ident(IdentName::new(wl_key.clone().into(), DUMMY_SP)),
+                prop: MemberProp::Ident(IdentName::new(wl_key.as_str().into(), DUMMY_SP)),
             });
             self.has_modified = true;
         }
@@ -103,7 +103,7 @@ impl VisitMut for WhitelabelRewriter {
                         DUMMY_SP,
                         Default::default(),
                     ))),
-                    prop: MemberProp::Ident(IdentName::new(wl_key.clone().into(), DUMMY_SP)),
+                    prop: MemberProp::Ident(IdentName::new(wl_key.as_str().into(), DUMMY_SP)),
                 })),
             });
             self.has_modified = true;
@@ -122,7 +122,7 @@ impl VisitMut for WhitelabelRewriter {
                     DUMMY_SP,
                     Default::default(),
                 )),
-                prop: IdentName::new(wl_key.clone().into(), DUMMY_SP),
+                prop: IdentName::new(wl_key.as_str().into(), DUMMY_SP),
             });
 
             self.has_modified = true;

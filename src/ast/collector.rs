@@ -95,7 +95,7 @@ impl<'a> Errorable<Vec<WhitelabelEntry>> for WhitelabelCollector<'a> {
             return Err(anyhow!("{}", self.format_multiple_errors(&self.errors)));
         }
 
-        Ok(self.entries.to_owned())
+        Ok(self.entries)
     }
 }
 
