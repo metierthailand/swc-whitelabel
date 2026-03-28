@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use std::fs;
 use swc_core::common::SourceFile;
 use swc_core::{
@@ -12,6 +12,7 @@ use swc_core::{
     },
 };
 
+use crate::ast::errorable::Errorable;
 use crate::ast::rewriter::WhitelabelRewriter;
 use crate::ast::scanner::SymbolScanner;
 use crate::config::{env, tsconfig};
@@ -49,7 +50,7 @@ pub fn exec(cm: &Lrc<SourceMap>, registry: &WhitelabelRegistry) -> Result<Vec<St
         let mut parser = Parser::new_from(lexer);
         let mut program = match parser.parse_program() {
             Ok(p) => p,
-            Err(_) => continue,
+            Err(e) => return Err(anyhow!("{:?}", e)),
         };
 
         let unresolved_mark = Mark::new();
@@ -61,6 +62,8 @@ pub fn exec(cm: &Lrc<SourceMap>, registry: &WhitelabelRegistry) -> Result<Vec<St
         let mut scanner = SymbolScanner::new(registry, cm.clone(), &ts_cfg.compiler_options.paths);
         program.visit_with(&mut scanner);
 
+        let _ = scanner.result()?;
+
         if scanner.target_ids.is_empty() {
             continue;
         }
@@ -68,7 +71,7 @@ pub fn exec(cm: &Lrc<SourceMap>, registry: &WhitelabelRegistry) -> Result<Vec<St
         let mut rewriter = WhitelabelRewriter::new(cm.clone(), scanner.target_ids, false);
         program.visit_mut_with(&mut rewriter);
 
-        if rewriter.has_modified {
+        if rewriter.result()? {
             let filename = fm.name.to_string();
             let mut buf = vec![];
             let mut emitter = Emitter {

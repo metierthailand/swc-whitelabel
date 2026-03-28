@@ -1,3 +1,4 @@
+use anyhow::{Error, Ok, anyhow};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use swc_core::common::Spanned;
@@ -7,6 +8,7 @@ use swc_core::ecma::{
     visit::{Visit, VisitWith},
 };
 
+use crate::ast::errorable::Errorable;
 use crate::config::env;
 use crate::module::registry::WhitelabelRegistry;
 use crate::util::report;
@@ -18,6 +20,16 @@ pub struct SymbolScanner<'a> {
     pub target_ids: HashMap<Id, String>,
     pub path_mapping: &'a HashMap<String, Vec<String>>,
     current_file_name: Option<Lrc<swc_core::common::FileName>>,
+    errors: Vec<Error>,
+}
+
+impl<'a> Errorable for SymbolScanner<'a> {
+    fn result(&self) -> anyhow::Result<()> {
+        if !self.errors.is_empty() {
+            return Err(anyhow!("{}", self.format_multiple_errors(&self.errors)));
+        }
+        Ok(())
+    }
 }
 
 impl<'a> SymbolScanner<'a> {
@@ -32,6 +44,7 @@ impl<'a> SymbolScanner<'a> {
             path_mapping,
             target_ids: HashMap::new(),
             current_file_name: None,
+            errors: vec![],
         }
     }
 
@@ -70,6 +83,7 @@ impl<'a> SymbolScanner<'a> {
                 base_paths_to_try.push(cwd.join(resolved_mapped));
             }
         } else {
+            // TODO node_modules / turbo repo
             return None;
         }
 
@@ -129,11 +143,16 @@ impl<'a> Visit for SymbolScanner<'a> {
     fn visit_import_decl(&mut self, import: &ImportDecl) {
         // 1. Grab the raw string (e.g., "./foo" or "@repo/foo")
         let Some(import_src) = import.src.value.as_str() else {
-            return;
+            return self.errors.push(anyhow!(
+                "[SymbolScanner.visit_import_decl] Couldn't resolve import.src.value: {:?}",
+                import.src.value
+            ));
         };
 
         let Some(current_file_name) = &self.current_file_name else {
-            return;
+            return self.errors.push(anyhow!(
+                "[SymbolScanner.visit_import_decl] current_file_name is not loaded",
+            ));
         };
 
         // 2. Discriminate based on the Node.js resolution rules
@@ -148,11 +167,14 @@ impl<'a> Visit for SymbolScanner<'a> {
             if let ImportSpecifier::Named(named) = specifier {
                 let imported_name = match &named.imported {
                     Some(ModuleExportName::Ident(ident)) => ident.sym.to_string(),
-                    Some(ModuleExportName::Str(s)) => s
-                        .value
-                        .as_str()
-                        .unwrap_or_else(|| panic!("Malformed ModuleExportName::Str({:?})", s))
-                        .into(),
+                    Some(ModuleExportName::Str(s)) => match s.value.as_str() {
+                        Some(str) => str.into(),
+                        None => {
+                            return self
+                                .errors
+                                .push(anyhow!("Malformed ModuleExportName::Str({:?})", s));
+                        }
+                    },
                     None => named.local.sym.to_string(),
                 };
 

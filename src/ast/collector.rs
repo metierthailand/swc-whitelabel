@@ -3,6 +3,7 @@ use std::{
     path::PathBuf,
 };
 
+use anyhow::anyhow;
 use serde::Serialize;
 use swc_core::{
     common::{
@@ -16,7 +17,7 @@ use swc_core::{
     },
 };
 
-use crate::ast::parser::ast;
+use crate::ast::{errorable::Errorable, parser::ast};
 use crate::{ast::parser::directive::DirectiveRuleParser, config::env, util};
 
 #[derive(Clone)]
@@ -84,8 +85,18 @@ pub struct WhitelabelEntry {
 pub struct WhitelabelCollector<'a> {
     source_map: &'a Lrc<SourceMap>,
     comments: &'a SingleThreadedComments,
-    pub entries: Vec<WhitelabelEntry>,
-    pub errors: Vec<String>,
+    entries: Vec<WhitelabelEntry>,
+    errors: Vec<String>,
+}
+
+impl<'a> Errorable<Vec<WhitelabelEntry>> for WhitelabelCollector<'a> {
+    fn result(&self) -> anyhow::Result<Vec<WhitelabelEntry>> {
+        if !self.errors.is_empty() {
+            return Err(anyhow!("{}", self.format_multiple_errors(&self.errors)));
+        }
+
+        Ok(self.entries.to_owned())
+    }
 }
 
 impl<'a> WhitelabelCollector<'a> {

@@ -17,8 +17,8 @@ use swc_core::{
 
 use swc_core::common::{GLOBALS, Globals};
 
-use crate::generator;
 use crate::{ast, module::registry::WhitelabelRegistry};
+use crate::{ast::errorable::Errorable, generator};
 use crate::{config, module};
 
 use crate::util::{create_reporter, report};
@@ -102,14 +102,9 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
             module.visit_with(&mut collector);
         }
 
-        if !collector.errors.is_empty() {
-            for err in &collector.errors {
-                eprintln!("❌ Error: {}", err);
-            }
-            return Err(anyhow!("{:?}", collector.errors));
-        }
+        let entries = collector.result()?;
 
-        let len = collector.entries.len();
+        let len = entries.len();
         let registry: WhitelabelRegistry = collector.try_into()?;
 
         report(|| {

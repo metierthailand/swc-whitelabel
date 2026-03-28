@@ -19,7 +19,7 @@ We ruthlessly prioritize our backlog based on **Blast Radius and Risk Mitigation
 * [x] **2. ES Module Circular Dependencies (Runtime App Crash):** Output cyclic-safe code (e.g., getter functions) to prevent `ReferenceError`s from uninitialized lexical bindings.
 * [x] **3. Idempotency (Double-writes):** Running the tool twice must yield the exact same file state. 
   * [ ] *Action:* Upgrade injection detection to rely on AST and config validation rather than simple string matching.
-* [ ] **4. Stop Silent Omissions:** Log warnings for any unresolved imports or parse failures instead of silently skipping files (e.g., dropping the `Err(_) => continue` pattern).
+* [x] **4. Stop Silent Omissions:** Log warnings for any unresolved imports or parse failures instead of silently skipping files (e.g., dropping the `Err(_) => continue` pattern).
 * [ ] **5. Optional `compilerOptions.paths`:** The tool currently crashes if `paths` is missing in `tsconfig.json`. It must default to an empty map instead of panicking.
 * [x] **6. Graceful Unresolved Imports:** Unresolved imports should log a warning and be skipped, not crash the binary.
 * [x] **7. JSX Closing Tags (Syntax Corruption):** Rewrite `</BrandAHeader>` to `</whitelabel.HeroHeader>` to preserve React AST integrity.
@@ -29,7 +29,7 @@ We ruthlessly prioritize our backlog based on **Blast Radius and Risk Mitigation
 
 * [x] **8. Halt on Validation Errors & Fix CLI Exit Codes:** If the collector finds an invalid directive, the tool **must fail with a non-zero exit code** and halt. "Partial success" is unacceptable.
 * [x] **9. Eradicate `unwrap/expect/panic` in `run.rs`:** Convert initialization, glob parsing, and file I/O errors into contextual `anyhow::Result` user-facing error messages.
-  * [ ] *Action:* Eliminate remaining `todo!()` macros in the execution hot path.
+  * [x] *Action:* Eliminate remaining `todo!()` macros in the execution hot path.
 * [ ] **10. Secure Path Resolution:** Validate that user-provided configuration patterns cannot escape the intended source root directory.
 * [ ] **11. Define Public Contract:** Establish a versioned configuration schema and a clear compatibility matrix for users.
 * [ ] **12. Comprehensive E2E Tests:** Expand `tests/integration_test.rs` to cover alias-heavy imports, malformed configs, self-closing JSX, multi-declarator exports, and syntax errors.
@@ -57,7 +57,7 @@ We ruthlessly prioritize our backlog based on **Blast Radius and Risk Mitigation
 **Goal:** Align the README promises with the actual code behavior and improve DX.
 
 * [ ] **23. Clarify Resolver Semantics:** Update the README to explicitly state that the resolver supports `paths` and wildcard matching, but does *not* claim 100% Node.js parity.
-* [ ] **24. Document Brand Selection Strategy:** Frame the `NEXT_PUBLIC_WHITELABEL` generated code as a "starter strategy".
+* [x] **24. Document Brand Selection Strategy:** Frame the `NEXT_PUBLIC_WHITELABEL` generated code as a "starter strategy".
 * [ ] **25. Clean up `package.json`:** Either explain why it's there (for fixture linting) or delete it to keep the Rust repo focused.
 
 ---

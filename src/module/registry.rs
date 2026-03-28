@@ -4,6 +4,7 @@ use std::fs;
 use std::{collections::HashMap, path::PathBuf};
 
 use crate::ast::collector::{WhitelabelCollector, WhitelabelEntry, WhitelabelTarget};
+use crate::ast::errorable::Errorable;
 use crate::config::env::{self, with_config};
 use crate::util::report;
 use std::collections::hash_map::DefaultHasher;
@@ -118,7 +119,7 @@ impl TryFrom<WhitelabelCollector<'_>> for WhitelabelRegistry {
 
         let root_dir = with_config(|cfg| cfg.cwd.join(&cfg.src));
 
-        let entries = collector.entries;
+        let entries = collector.result()?;
 
         let (optional, implemented): (Vec<_>, Vec<_>) =
             entries.into_iter().partition(|p| p.optional);
@@ -280,7 +281,14 @@ impl TryFrom<WhitelabelCollector<'_>> for WhitelabelRegistry {
             .collect();
 
         if !missing_keys.is_empty() {
-            return Err(anyhow!("Missing keys: {:?}", missing_keys));
+            return Err(anyhow!(
+                "[Registry module] Please check an implementation for following keys:\n{}",
+                missing_keys
+                    .iter()
+                    .map(|(variant, key)| format!("({variant}) {key}"))
+                    .collect::<Vec<_>>()
+                    .join("\n")
+            ));
         }
 
         let mut pivoted: HashMap<Key, HashSet<WhitelabelRecord>> = HashMap::new();
