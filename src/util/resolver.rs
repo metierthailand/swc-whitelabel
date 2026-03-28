@@ -24,7 +24,7 @@ impl TsImportPathResolver {
         // Step 1: Check for an EXACT match (e.g., "@/app/whitelabel")
         else if let Some(mapped_path) = self.path_mapping.get(import_src) {
             // Only first in record
-            return cname(cwd.join(&mapped_path));
+            return cname(cwd.join(mapped_path));
         }
         // Step 2: Check for a WILDCARD match (e.g., "@app/*")
         else if let Some((pattern, mapped_path, _)) = self.best_path_mapping_match(import_src)
