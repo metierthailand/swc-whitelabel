@@ -63,7 +63,7 @@ impl<'a> SymbolScanner<'a> {
         // Step 1: Check for an EXACT match (e.g., "@/app/whitelabel")
         else if let Some(mapped_paths) = self.path_mapping.get(import_src) {
             // Only first in record
-            return cwd.join(&mapped_paths[0]).canonicalize().ok();
+            return cname(cwd.join(&mapped_paths[0]));
         }
         // Step 2: Check for a WILDCARD match (e.g., "@app/*")
         else if let Some((pattern, mapped_paths, _)) = self.best_path_mapping_match(import_src)
@@ -78,7 +78,7 @@ impl<'a> SymbolScanner<'a> {
             let first = mapped_paths[0].to_owned();
             let resolved_mapped = first.replace("*", wildcard_match);
 
-            return cwd.join(resolved_mapped).canonicalize().ok();
+            return cname(cwd.join(resolved_mapped));
         }
 
         // TODO node_modules / turbo repo
@@ -155,7 +155,10 @@ impl<'a> Visit for SymbolScanner<'a> {
                     None => named.local.sym.to_string(),
                 };
 
-                if let Some(entry) = self.registry.lookup(&imported_name, &resolved_path) {
+                if let Some(entry) = self
+                    .registry
+                    .lookup(&imported_name, &resolved_path.with_extension(""))
+                {
                     {
                         report(|| {
                             if let Some(file_name) = self.current_file_name.as_ref() {
