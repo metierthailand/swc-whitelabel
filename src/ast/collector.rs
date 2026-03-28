@@ -146,8 +146,20 @@ impl<'a> WhitelabelCollector<'a> {
 
                     return Some(parsed_directive);
                 } else {
-                    self.errors
-                        .push(format!("Parsing error: {:?}", directive_ast_result.err()));
+                    let path = env::with_config(|cfg| {
+                        let root_dir = cfg.cwd.join(&cfg.src);
+                        let pb = PathBuf::from(self.get_filename(span));
+
+                        let relative_pb = pb.strip_prefix(&root_dir).unwrap_or(&pb);
+
+                        relative_pb.to_string_lossy().to_string()
+                    });
+
+                    self.errors.push(format!(
+                        "[{}] Parsing error: {:?}",
+                        path,
+                        directive_ast_result.err()
+                    ));
                     continue;
                 };
             }

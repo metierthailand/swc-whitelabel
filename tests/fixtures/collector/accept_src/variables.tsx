@@ -82,10 +82,3 @@ export const TITLE_5 = "5_ELTIT";
 
 // whitelabel for 'a', for 'b'
 export const MULTIPLE_TARGETS = ["a", "b"];
-
-/**
- * But targets with * is not.
- */
-
-// whitelabel for 'a', *
-export const MIXED_TARGETS = ["a", "b"];
