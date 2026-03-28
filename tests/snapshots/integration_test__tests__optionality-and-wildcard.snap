@@ -1,0 +1,188 @@
+---
+source: tests/integration_test.rs
+expression: idempt_output
+---
+--- app/def.ts ---
+// whitelabel
+export const FLAG_ENABLE_FEATURE_A = true;
+
+// whitelabel *
+export const GLOBAL_FEATURE = "I am distributed everywhere!";
+
+// We intentionally do NOT implement V1_ONLY_FEATURE for def.
+// Because it is 'optional', the registry will safely inject `undefined`.
+//
+
+
+--- app/v1.ts ---
+// whitelabel for 'v1', as 'FLAG_ENABLE_FEATURE_A'
+export const V1_FLAG_ENABLE_FEATURE_A = false;
+
+// whitelabel optional, for 'v1'
+export const V1_ONLY_FEATURE = "Only present in def";
+
+//  We intentionally do NOT implement GLOBAL_FEATURE for v1.
+//  Because it was marked with '*', the registry will automatically
+//  point v1's GLOBAL_FEATURE to the `def.ts` implementation!
+
+
+--- app/whitelabel/def.generated.tsx ---
+/* eslint-disable @typescript-eslint/no-require-imports */
+
+// AUTO-GENERATED: DO NOT EDIT
+
+import type { WhitelabelConfig } from "./whitelabel";
+export class whitelabel implements WhitelabelConfig {
+  public get FLAG_ENABLE_FEATURE_A(): WhitelabelConfig["FLAG_ENABLE_FEATURE_A"] {
+    return require("../def").FLAG_ENABLE_FEATURE_A;
+  }
+  public get GLOBAL_FEATURE(): WhitelabelConfig["GLOBAL_FEATURE"] {
+    return require("../def").GLOBAL_FEATURE;
+  }
+  public get V1_ONLY_FEATURE(): undefined {
+    return undefined;
+  }
+}
+
+export default whitelabel;
+
+
+--- app/whitelabel/index.ts ---
+/**
+ * 🎨 WHITELABEL RESOLUTION ENTRY POINT
+ * * Unlike the `*.generated.tsx` files in this directory, this file is YOURS to edit!
+ * `wl-extractor` generated this as a starter template. You should customize the
+ * logic here to match how your application determines the current tenant/brand.
+ * * By default, this uses a static, build-time environment variable.
+ */
+
+import { type Variants, Whitelabel, type WhitelabelConfig } from "./whitelabel";
+
+// --- Default Strategy: Build-time Environment Variable ---
+const currentWhitelabel = (() => {
+  // Fallback to 'def' (or your project's default) if the env var is missing
+  const variant = (process.env.NEXT_PUBLIC_WHITELABEL as Variants) || "def";
+  return new Whitelabel()[variant];
+})();
+
+// ! The default export MUST satisfy the `WhitelabelConfig` interface.
+// This ensures that wherever you `import whitelabel from '...'`, it is strictly typed.
+export default currentWhitelabel satisfies WhitelabelConfig;
+
+export { type Variants, type WhitelabelConfig };
+
+/* * ============================================================================
+ * 💡 IDEAS FOR ADVANCED CUSTOM LOGIC
+ * ============================================================================
+ * * 1. React Context & Hooks (Client-Side Dynamic)
+ * ----------------------------------------------------------------------------
+ * If your app switches brands dynamically in the browser (e.g., a dropdown),
+ * export a hook to access the current config:
+ * * export const useWhitelabel = (): WhitelabelConfig => {
+ * // e.g., Read from Redux, Zustand, or React Context
+ * const currentTenant = useTenantStore((state) => state.tenant);
+ * return new Whitelabel()[currentTenant as Variants];
+ * };
+ * * * 2. Next.js App Router / SSR (Per-Request Whitelabeling)
+ * ----------------------------------------------------------------------------
+ * If you are hosting multiple tenants on a single Node server, `process.env`
+ * won't work. Instead, resolve the brand based on the request headers or URL:
+ * * import { headers } from 'next/headers';
+ * * export const getServerWhitelabel = (): WhitelabelConfig => {
+ * const host = headers().get('host');
+ * const variant = host?.includes('brand-a') ? 'brandA' : 'def';
+ * return new Whitelabel()[variant as Variants];
+ * };
+ * ============================================================================
+ */
+
+
+--- app/whitelabel/v1.generated.tsx ---
+/* eslint-disable @typescript-eslint/no-require-imports */
+
+// AUTO-GENERATED: DO NOT EDIT
+
+import type { WhitelabelConfig } from "./whitelabel";
+export class whitelabel implements WhitelabelConfig {
+  public get FLAG_ENABLE_FEATURE_A(): WhitelabelConfig["FLAG_ENABLE_FEATURE_A"] {
+    return require("../v1").V1_FLAG_ENABLE_FEATURE_A;
+  }
+  public get GLOBAL_FEATURE(): WhitelabelConfig["GLOBAL_FEATURE"] {
+    return require("../def").GLOBAL_FEATURE;
+  }
+  public get V1_ONLY_FEATURE(): WhitelabelConfig["V1_ONLY_FEATURE"] {
+    return require("../v1").V1_ONLY_FEATURE;
+  }
+}
+
+export default whitelabel;
+
+
+--- app/whitelabel/whitelabel.ts ---
+/* eslint-disable @typescript-eslint/no-require-imports */
+// AUTO-GENERATED: DO NOT EDIT
+import type { FLAG_ENABLE_FEATURE_A as def_9cdb2b74dedf4cf3 } from "../def";
+import type { V1_FLAG_ENABLE_FEATURE_A as v1_408bf262d43a12ce } from "../v1";
+import type { GLOBAL_FEATURE as def_f056fb1c2c2d2377 } from "../def";
+import type { GLOBAL_FEATURE as v1_f056fb1c2c2d2377 } from "../def";
+import type { V1_ONLY_FEATURE as v1_b19f5ed50a20953b } from "../v1";
+export interface WhitelabelConfig {
+  /**
+   * ### 🏷️ Available for: {@link def_9cdb2b74dedf4cf3 | `def`} | {@link v1_408bf262d43a12ce | `v1`}
+   * @copyright **def**
+   * @default
+   * ```tsx
+   * true
+   * ```
+   */
+  FLAG_ENABLE_FEATURE_A: typeof def_9cdb2b74dedf4cf3 | typeof v1_408bf262d43a12ce;
+  /**
+   * ### 🏷️ Available for: {@link def_f056fb1c2c2d2377 | `def`} | {@link v1_f056fb1c2c2d2377 | `v1`}
+   * @copyright **def**
+   * @default
+   * ```tsx
+   * "I am distributed everywhere!"
+   * ```
+   */
+  GLOBAL_FEATURE: typeof def_f056fb1c2c2d2377 | typeof v1_f056fb1c2c2d2377;
+  /**
+   * ### 🏷️ Available for: {@link v1_b19f5ed50a20953b | `v1`}
+   * @copyright **def**
+   * @default
+   * ```tsx
+   * undefined
+   * ```
+   */
+  V1_ONLY_FEATURE: undefined | typeof v1_b19f5ed50a20953b;
+}
+export type Variants = "def" | "v1";
+
+export class Whitelabel implements Record<Variants, WhitelabelConfig> {
+  public get def(): WhitelabelConfig {
+    const VariantConfig = require("./def.generated").default;
+    return new VariantConfig();
+  }
+  public get v1(): WhitelabelConfig {
+    const VariantConfig = require("./v1.generated").default;
+    return new VariantConfig();
+  }
+}
+
+
+--- tsconfig.json ---
+{
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "paths": {}
+  }
+}
+
+
+--- whitelabel.config.json ---
+{
+  "src": "app/",
+  "patterns": ["**/*.ts"],
+  "output_dir": "whitelabel",
+  "default_target": "def",
+  "tsconfig": "tsconfig.json"
+}
