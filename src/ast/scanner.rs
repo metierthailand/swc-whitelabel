@@ -82,7 +82,7 @@ impl<'a> SymbolScanner<'a> {
         }
 
         // TODO node_modules / turbo repo
-        return None;
+        None
     }
 
     fn best_path_mapping_match(&self, import_src: &str) -> Option<(&String, &Vec<String>, usize)> {

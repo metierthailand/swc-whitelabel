@@ -1,5 +1,6 @@
 use anyhow::{Error, anyhow};
 use std::collections::HashSet;
+use std::path::Path;
 use std::{collections::HashMap, path::PathBuf};
 
 use crate::ast::collector::{WhitelabelEntry, WhitelabelTarget};
@@ -68,7 +69,7 @@ impl WhitelabelRegistry {
             .unwrap_or_default()
     }
 
-    pub fn lookup(&self, name: &String, abs_resolved_path: &PathBuf) -> Option<WhitelabelEntry> {
+    pub fn lookup(&self, name: &String, abs_resolved_path: &Path) -> Option<WhitelabelEntry> {
         let entries = self.pivoted.get(name).map(|targets| {
             targets
                 .iter()
