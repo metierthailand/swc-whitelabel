@@ -63,4 +63,5 @@ pub fn cname(input: PathBuf) -> Option<PathBuf> {
     })
 }
 
+pub mod resolver;
 pub mod transactional;

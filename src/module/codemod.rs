@@ -16,11 +16,16 @@ use crate::ast::scanner::SymbolScanner;
 use crate::common::{errorable::Errorable, registry::WhitelabelRegistry};
 use crate::config::{env, tsconfig};
 use crate::util::report;
+use crate::util::resolver::TsImportPathResolver;
 use crate::util::transactional::TxFS;
 
 pub fn exec(cm: &Lrc<SourceMap>, registry: &WhitelabelRegistry) -> Result<Vec<String>> {
     let mut modified_files: Vec<String> = Vec::new();
-    let ts_cfg = env::with_config(|cfg| tsconfig::load(cfg.tsconfig.clone()))?;
+    let import_path_resolver = env::with_config(|cfg| {
+        let tsconfig = tsconfig::load(cfg.tsconfig.clone())?;
+        let resolver: TsImportPathResolver = tsconfig.compiler_options.paths.try_into()?;
+        anyhow::Ok(resolver)
+    })?;
     let output_dir = env::with_config(|cfg| cfg.output_dir.clone());
 
     let files: Vec<Lrc<SourceFile>> = {
@@ -58,7 +63,7 @@ pub fn exec(cm: &Lrc<SourceMap>, registry: &WhitelabelRegistry) -> Result<Vec<St
         program.visit_mut_with(&mut resolver(unresolved_mark, top_level_mark, false));
 
         use swc_core::ecma::visit::VisitWith;
-        let mut scanner = SymbolScanner::new(registry, cm.clone(), &ts_cfg.compiler_options.paths);
+        let mut scanner = SymbolScanner::new(registry, cm.clone(), &import_path_resolver);
         program.visit_with(&mut scanner);
 
         let target_ids = scanner.into_result()?;

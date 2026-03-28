@@ -10,7 +10,7 @@ use swc_core::ecma::{
 
 use crate::common::errorable::Errorable;
 use crate::common::registry::WhitelabelRegistry;
-use crate::config::env;
+use crate::util::resolver::TsImportPathResolver;
 use crate::util::{cname, report};
 
 // Scans the file for imports or local declarations that match known whitelabel symbols
@@ -18,7 +18,7 @@ pub struct SymbolScanner<'a> {
     pub source_map: Lrc<SourceMap>,
     pub registry: &'a WhitelabelRegistry,
     pub target_ids: HashMap<Id, String>,
-    pub path_mapping: &'a HashMap<String, Vec<String>>,
+    pub resolver: &'a TsImportPathResolver,
     current_file_name: Option<Lrc<swc_core::common::FileName>>,
     errors: Vec<Error>,
 }
@@ -36,73 +36,16 @@ impl<'a> SymbolScanner<'a> {
     pub fn new(
         registry: &'a WhitelabelRegistry,
         source_map: Lrc<SourceMap>,
-        path_mapping: &'a HashMap<String, Vec<String>>,
+        resolver: &'a TsImportPathResolver,
     ) -> Self {
         Self {
             registry,
             source_map,
-            path_mapping,
+            resolver,
             target_ids: HashMap::new(),
             current_file_name: None,
             errors: vec![],
         }
-    }
-
-    /// Resolves an import string into an absolute physical file path
-    /// Fully respects relative imports and tsconfig.json `paths` aliases.
-    fn resolve_import(&self, current_file_path: PathBuf, import_src: &str) -> Option<PathBuf> {
-        let cwd = env::with_config(|cfg| cfg.cwd.clone());
-
-        // 🎯 CATEGORY 1: Relative Import (Bypasses TS paths)
-        if import_src.starts_with('.')
-            && let Some(parent) = current_file_path.parent()
-        {
-            return cname(parent.join(import_src));
-        }
-        /* 🎯 CATEGORY 2: TSConfig Path Resolution */
-        // Step 1: Check for an EXACT match (e.g., "@/app/whitelabel")
-        else if let Some(mapped_paths) = self.path_mapping.get(import_src) {
-            // Only first in record
-            return cname(cwd.join(&mapped_paths[0]));
-        }
-        // Step 2: Check for a WILDCARD match (e.g., "@app/*")
-        else if let Some((pattern, mapped_paths, _)) = self.best_path_mapping_match(import_src)
-            && let Some(star_idx) = pattern.find('*')
-        {
-            let prefix = &pattern[..star_idx];
-            let suffix = &pattern[star_idx + 1..];
-
-            // Extract the string that replaces the '*'
-            let wildcard_match = &import_src[prefix.len()..import_src.len() - suffix.len()];
-
-            let first = mapped_paths[0].to_owned();
-            let resolved_mapped = first.replace("*", wildcard_match);
-
-            return cname(cwd.join(resolved_mapped));
-        }
-
-        // TODO node_modules / turbo repo
-        None
-    }
-
-    fn best_path_mapping_match(&self, import_src: &str) -> Option<(&String, &Vec<String>, usize)> {
-        let mut best_match: Option<(&String, &Vec<String>, usize)> = None;
-        for (pattern, mapped_paths) in self.path_mapping {
-            if let Some(star_idx) = pattern.find('*') {
-                let prefix = &pattern[..star_idx];
-                let suffix = &pattern[star_idx + 1..];
-
-                if import_src.starts_with(prefix) && import_src.ends_with(suffix) {
-                    let match_len = prefix.len() + suffix.len();
-                    // TypeScript Rule: Longest prefix match wins!
-                    if best_match.is_none_or(|(_, _, size)| match_len > size) {
-                        best_match = Some((pattern, mapped_paths, match_len));
-                    }
-                }
-            }
-        }
-
-        best_match
     }
 }
 
@@ -133,8 +76,9 @@ impl<'a> Visit for SymbolScanner<'a> {
         };
 
         // 2. Discriminate based on the Node.js resolution rules
-        let Some(resolved_path) =
-            self.resolve_import(current_file_name.to_string().into(), import_src)
+        let Some(resolved_path) = self
+            .resolver
+            .resolve_import(current_file_name.to_string().into(), import_src)
         else {
             return;
         };
