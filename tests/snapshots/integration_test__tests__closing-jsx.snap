@@ -33,70 +33,18 @@ const App = () => (
 
 // AUTO-GENERATED: DO NOT EDIT
 
-import type { Button } from "../index";
-import type { Footer } from "../index";
-import type { Heading } from "../index";
-import type { Layout } from "../index";
-
-export class whitelabel {
-  /**
-   * ### 🏷️ Tenant: `def`
-   *
-   * **from `../index`**
-   *
-   * Go to {@link Button | implementation}.
-   * @default
-   * ```tsx
-   * _Button
-   * ```
-   *
-   */
-  public get Button(): typeof Button {
+import type { WhitelabelConfig } from ".";
+export class whitelabel implements WhitelabelConfig {
+  public get Button(): WhitelabelConfig["Button"] {
     return require("../index").Button;
   }
-  /**
-   * ### 🏷️ Tenant: `def`
-   *
-   * **from `../index`**
-   *
-   * Go to {@link Footer | implementation}.
-   * @default
-   * ```tsx
-   * _Footer
-   * ```
-   *
-   */
-  public get Footer(): typeof Footer {
+  public get Footer(): WhitelabelConfig["Footer"] {
     return require("../index").Footer;
   }
-  /**
-   * ### 🏷️ Tenant: `def`
-   *
-   * **from `../index`**
-   *
-   * Go to {@link Heading | implementation}.
-   * @default
-   * ```tsx
-   * _Heading
-   * ```
-   *
-   */
-  public get Heading(): typeof Heading {
+  public get Heading(): WhitelabelConfig["Heading"] {
     return require("../index").Heading;
   }
-  /**
-   * ### 🏷️ Tenant: `def`
-   *
-   * **from `../index`**
-   *
-   * Go to {@link Layout | implementation}.
-   * @default
-   * ```tsx
-   * _Layout
-   * ```
-   *
-   */
-  public get Layout(): typeof Layout {
+  public get Layout(): WhitelabelConfig["Layout"] {
     return require("../index").Layout;
   }
 }
@@ -104,28 +52,132 @@ export class whitelabel {
 export default whitelabel;
 
 
---- src/whitelabel/determine-whitelabel.ts ---
-// THIS MODULE IS FOR CUSTOM LOGIC TO DETERMINE CURRENT WHITELABEL
-// TODO: possibility for HTTP per-request whitelabel
-
-import type { Variants } from ".";
-
-const currentWhitelabel = (process.env.NEXT_PUBLIC_WHITELABEL as Variants) || "def";
-
-// ! exported result must be `satisfies Variants`
-export default currentWhitelabel satisfies Variants;
-
-
 --- src/whitelabel/index.ts ---
+/**
+ * 🎨 WHITELABEL RESOLUTION ENTRY POINT
+ * * Unlike the `*.generated.tsx` files in this directory, this file is YOURS to edit!
+ * `wl-extractor` generated this as a starter template. You should customize the
+ * logic here to match how your application determines the current tenant/brand.
+ * * By default, this uses a static, build-time environment variable.
+ */
+
+import { type Variants, Whitelabel, type WhitelabelConfig } from "./whitelabel";
+
+// --- Default Strategy: Build-time Environment Variable ---
+const currentWhitelabel = (() => {
+  // Fallback to 'def' (or your project's default) if the env var is missing
+  const variant = (process.env.NEXT_PUBLIC_WHITELABEL as Variants) || "def";
+  return new Whitelabel()[variant];
+})();
+
+// ! The default export MUST satisfy the `WhitelabelConfig` interface.
+// This ensures that wherever you `import whitelabel from '...'`, it is strictly typed.
+export default currentWhitelabel satisfies WhitelabelConfig;
+
+export { type Variants, type WhitelabelConfig };
+
+/* * ============================================================================
+ * 💡 IDEAS FOR ADVANCED CUSTOM LOGIC
+ * ============================================================================
+ * * 1. React Context & Hooks (Client-Side Dynamic)
+ * ----------------------------------------------------------------------------
+ * If your app switches brands dynamically in the browser (e.g., a dropdown),
+ * export a hook to access the current config:
+ * * export const useWhitelabel = (): WhitelabelConfig => {
+ * // e.g., Read from Redux, Zustand, or React Context
+ * const currentTenant = useTenantStore((state) => state.tenant);
+ * return new Whitelabel()[currentTenant as Variants];
+ * };
+ * * * 2. Next.js App Router / SSR (Per-Request Whitelabeling)
+ * ----------------------------------------------------------------------------
+ * If you are hosting multiple tenants on a single Node server, `process.env`
+ * won't work. Instead, resolve the brand based on the request headers or URL:
+ * * import { headers } from 'next/headers';
+ * * export const getServerWhitelabel = (): WhitelabelConfig => {
+ * const host = headers().get('host');
+ * const variant = host?.includes('brand-a') ? 'brandA' : 'def';
+ * return new Whitelabel()[variant as Variants];
+ * };
+ * ============================================================================
+ */
+
+
+--- src/whitelabel/mar.generated.tsx ---
+/* eslint-disable @typescript-eslint/no-require-imports */
+
+// AUTO-GENERATED: DO NOT EDIT
+
+import type { WhitelabelConfig } from ".";
+export class whitelabel implements WhitelabelConfig {
+  public get Button(): WhitelabelConfig["Button"] {
+    return require("../wl.mar").Button;
+  }
+  public get Footer(): WhitelabelConfig["Footer"] {
+    return require("../wl.mar").Footer;
+  }
+  public get Heading(): WhitelabelConfig["Heading"] {
+    return require("../wl.mar").MarHeading;
+  }
+  public get Layout(): WhitelabelConfig["Layout"] {
+    return require("../wl.mar").Layout;
+  }
+}
+
+export default whitelabel;
+
+
+--- src/whitelabel/whitelabel.ts ---
 /* eslint-disable @typescript-eslint/no-require-imports */
 // AUTO-GENERATED: DO NOT EDIT
-import __current from "./determine-whitelabel";
-import type def from "./def.generated";
-import type mar from "./mar.generated";
-export type WhitelabelConfig = InstanceType<typeof def>;
+import type { Button as def_cd7cef77922e9d45 } from "../index";
+import type { Button as mar_4bb3d0fc40d972c } from "../wl.mar";
+import type { Footer as def_7d16cea1c59f887a } from "../index";
+import type { Footer as mar_f93683f6c39c9f21 } from "../wl.mar";
+import type { Heading as def_773d8262180994a9 } from "../index";
+import type { MarHeading as mar_d429983f84da20dd } from "../wl.mar";
+import type { Layout as def_18b1d93120a3c332 } from "../index";
+import type { Layout as mar_ebd4517c2b1cd9b5 } from "../wl.mar";
+export interface WhitelabelConfig {
+  /**
+   * ### 🏷️ Available for: {@link def_cd7cef77922e9d45 | `def`} | {@link mar_4bb3d0fc40d972c | `mar`}
+   * @copyright **def**
+   * @default
+   * ```tsx
+   * _Button
+   * ```
+   */
+  Button: typeof def_cd7cef77922e9d45 | typeof mar_4bb3d0fc40d972c;
+  /**
+   * ### 🏷️ Available for: {@link def_7d16cea1c59f887a | `def`} | {@link mar_f93683f6c39c9f21 | `mar`}
+   * @copyright **def**
+   * @default
+   * ```tsx
+   * _Footer
+   * ```
+   */
+  Footer: typeof def_7d16cea1c59f887a | typeof mar_f93683f6c39c9f21;
+  /**
+   * ### 🏷️ Available for: {@link def_773d8262180994a9 | `def`} | {@link mar_d429983f84da20dd | `mar`}
+   * @copyright **def**
+   * @default
+   * ```tsx
+   * _Heading
+   * ```
+   */
+  Heading: typeof def_773d8262180994a9 | typeof mar_d429983f84da20dd;
+  /**
+   * ### 🏷️ Available for: {@link def_18b1d93120a3c332 | `def`} | {@link mar_ebd4517c2b1cd9b5 | `mar`}
+   * @copyright **def**
+   * @default
+   * ```tsx
+   * _Layout
+   * ```
+   */
+  Layout: typeof def_18b1d93120a3c332 | typeof mar_ebd4517c2b1cd9b5;
+}
 export type Variants = "def" | "mar";
 
-class Whitelabel implements Record<Variants, WhitelabelConfig> {
+export class Whitelabel implements Record<Variants, WhitelabelConfig> {
   public get def(): WhitelabelConfig {
     const VariantConfig = require("./def.generated").default;
     return new VariantConfig();
@@ -135,89 +187,6 @@ class Whitelabel implements Record<Variants, WhitelabelConfig> {
     return new VariantConfig();
   }
 }
-
-export default new Whitelabel()[__current];
-
-
---- src/whitelabel/mar.generated.tsx ---
-/* eslint-disable @typescript-eslint/no-require-imports */
-
-// AUTO-GENERATED: DO NOT EDIT
-
-import type { WhitelabelConfig } from ".";
-import type { Button } from "../wl.mar";
-import type { Footer } from "../wl.mar";
-import type { MarHeading } from "../wl.mar";
-import type { Layout } from "../wl.mar";
-
-export class whitelabel implements WhitelabelConfig {
-  /**
-   * ### 🏷️ Tenant: `mar`
-   *
-   * **from `../wl.mar`**
-   *
-   * Go to {@link Button | implementation}.
-   * @default
-   * ```tsx
-   * ({ children }) => (
-   *   <button className="text-lg">{children}</button>
-   * )
-   * ```
-   *
-   */
-  public get Button(): typeof Button {
-    return require("../wl.mar").Button;
-  }
-  /**
-   * ### 🏷️ Tenant: `mar`
-   *
-   * **from `../wl.mar`**
-   *
-   * Go to {@link Footer | implementation}.
-   * @default
-   * ```tsx
-   * () => <p>Contact Them!</p>
-   * ```
-   *
-   */
-  public get Footer(): typeof Footer {
-    return require("../wl.mar").Footer;
-  }
-  /**
-   * ### 🏷️ Tenant: `mar`
-   *
-   * **from `../wl.mar`**
-   *
-   * Go to {@link MarHeading | implementation}.
-   * @default
-   * ```tsx
-   * ({ children }) => <h2>{children}</h2>
-   * ```
-   *
-   */
-  public get Heading(): typeof MarHeading {
-    return require("../wl.mar").MarHeading;
-  }
-  /**
-   * ### 🏷️ Tenant: `mar`
-   *
-   * **from `../wl.mar`**
-   *
-   * Go to {@link Layout | implementation}.
-   * @default
-   * ```tsx
-   * ({ children }) => (
-   *   <div className="bg-green-500">{children}</div>
-   * )
-   * ```
-   *
-   */
-  public get Layout(): typeof Layout {
-    return require("../wl.mar").Layout;
-  }
-}
-
-export default whitelabel;
 
 
 --- src/wl.mar.tsx ---

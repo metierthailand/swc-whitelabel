@@ -61,13 +61,21 @@ pub fn generate(registry: &WhitelabelRegistry) -> String {
 "#,
     );
 
-    let entries = registry.by_keys();
+    let mut entries = registry.by_keys();
+
+    entries.sort_by(|(a, _), (b, _)| a.cmp(b));
 
     for (key, variants) in &entries {
-        typedef.push_str(&format_doc(variants));
+        let mut sorted_variants = variants.clone();
+        sorted_variants.sort_by(|a, b| match a.target.cmp(&b.target) {
+            std::cmp::Ordering::Equal => a.symbol.short_id().cmp(&b.symbol.short_id()),
+            s => s,
+        });
+
+        typedef.push_str(&format_doc(&sorted_variants));
         typedef.push_str(&format!("{}: ", key));
 
-        for v in variants {
+        for v in sorted_variants {
             match &v.symbol {
                 WhitelabelSymbol::Symbol {
                     symbol,
@@ -100,7 +108,8 @@ pub fn generate(registry: &WhitelabelRegistry) -> String {
         .as_str(),
     );
 
-    let targets = registry.targets();
+    let mut targets = registry.targets();
+    targets.sort_by(|a, b| a.cmp(b));
 
     let mut unions = String::from("export type Variants =");
     for target in targets.clone() {
