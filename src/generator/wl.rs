@@ -1,88 +1,50 @@
-use std::path::{Path, PathBuf};
-
 use crate::{
-    ast::collector::{self, WhitelabelEntry},
+    common::registry::{WhitelabelRecord, WhitelabelSymbol},
     config::env,
-    util,
+    util::to_rel_import,
 };
 
-fn to_rel_import(current_dir: &Path, entry: &WhitelabelEntry) -> PathBuf {
-    let absolute_target = env::with_config(|cfg| cfg.cwd.join(&cfg.src).join(&entry.import_path));
-
-    match util::compute_relative_import(current_dir, &absolute_target) {
-        Some(s) => PathBuf::from(s).with_extension(""),
-        None => PathBuf::from(&entry.import_path), // Safe fallback
-    }
-}
-
-fn format_doc(entry: &WhitelabelEntry, current_dir: &Path) -> String {
-    format!(
-        r#"/**
-* ### 🏷️ Tenant: `{}`
-*
-* **from `{}`**
-*
-* Go to {{@link {} | implementation}}.
-* @default
-* ```tsx
-{}
-* ```
-*
-*/
-"#,
-        entry.target,
-        to_rel_import(current_dir, entry).to_string_lossy(),
-        entry.symbol,
-        entry
-            ._experiment_remark
-            .lines()
-            .map(|line| format!("* {}", line))
-            .collect::<Vec<_>>()
-            .join("\n"),
-    )
-}
-
-pub fn generate(entries: &Vec<&collector::WhitelabelEntry>, is_default: bool) -> String {
-    let mut output = String::new();
-    output.push_str(if !is_default {
-        "/* eslint-disable @typescript-eslint/no-require-imports */\n\n// AUTO-GENERATED: DO NOT EDIT\n\nimport type { WhitelabelConfig } from '.';\n"
-    } else {
-        "/* eslint-disable @typescript-eslint/no-require-imports */\n\n// AUTO-GENERATED: DO NOT EDIT\n\n"
-    });
-
-    let mut sorted_entries: Vec<&WhitelabelEntry> = entries.to_vec();
-    sorted_entries.sort_by_key(|e| &e.key);
-
+pub fn generate(entries: Vec<&WhitelabelRecord>) -> String {
     let current_dir = env::with_config(|cfg| cfg.cwd.join(&cfg.src).join(&cfg.output_dir));
 
-    for entry in &sorted_entries {
-        let relative_import = to_rel_import(&current_dir, entry);
-        output.push_str(&format!(
-            "import type {{ {} }} from \"{}\";\n",
-            entry.symbol,
-            relative_import.to_string_lossy()
-        ));
-    }
+    let mut output = String::new();
+    output.push_str(
+        r#"/* eslint-disable @typescript-eslint/no-require-imports */
 
-    output.push_str(if !is_default {
-        "\nexport class whitelabel implements WhitelabelConfig {\n"
-    } else {
-        "\nexport class whitelabel {\n"
-    });
-    for entry in &sorted_entries {
-        let relative_import = to_rel_import(&current_dir, entry);
+// AUTO-GENERATED: DO NOT EDIT
 
-        output.push_str(&format_doc(entry, &current_dir));
-        output.push_str(&format!(
-            r#"public get {}(): typeof {} {{
-                return require('{}').{}
-              }}
-          "#,
-            entry.key,
-            entry.symbol,
-            relative_import.to_string_lossy(),
-            entry.symbol
-        ));
+import type { WhitelabelConfig } from './whitelabel';"#,
+    );
+
+    let mut sorted = entries;
+
+    sorted.sort_by(|a, b| a.key.cmp(&b.key));
+
+    output.push_str("\nexport class whitelabel implements WhitelabelConfig {\n");
+    for entry in sorted {
+        let getter = match &entry.symbol {
+            WhitelabelSymbol::Symbol {
+                symbol,
+                import_path,
+            } => format!(
+                r#"public get {}(): WhitelabelConfig['{}'] {{
+                    return require('{}').{}
+                  }}
+              "#,
+                entry.key,
+                entry.key,
+                to_rel_import(&current_dir, import_path).to_string_lossy(),
+                symbol
+            ),
+            WhitelabelSymbol::Undefined => format!(
+                r#"public get {}(): undefined {{
+                    return undefined
+                  }}
+              "#,
+                entry.key,
+            ),
+        };
+        output.push_str(&getter);
     }
 
     output.push_str("};\n\nexport default whitelabel;\n");

@@ -1,3 +1,4 @@
+use anyhow::{Error, anyhow};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use swc_core::common::{DUMMY_SP, SourceMap, sync::Lrc};
@@ -6,6 +7,7 @@ use swc_core::ecma::{
     visit::{VisitMut, VisitMutWith, noop_visit_mut_type},
 };
 
+use crate::common::errorable::Errorable;
 use crate::config::env;
 use crate::util::{self};
 
@@ -14,9 +16,19 @@ pub struct WhitelabelRewriter {
     pub target_ids: HashMap<Id, String>,
     pub has_modified: bool,
     jsx_stack: Vec<JSXElementName>,
+    errors: Vec<Error>,
 }
 
 const KEYWORD: &[u8] = b"whitelabel";
+
+impl Errorable<bool> for WhitelabelRewriter {
+    fn into_result(self) -> anyhow::Result<bool> {
+        if !self.errors.is_empty() {
+            return Err(anyhow!("{}", self.format_multiple_errors(&self.errors)));
+        }
+        Ok(self.has_modified)
+    }
+}
 
 impl WhitelabelRewriter {
     pub fn new(
@@ -29,6 +41,7 @@ impl WhitelabelRewriter {
             target_ids,
             has_modified,
             jsx_stack: vec![],
+            errors: vec![],
         }
     }
     fn find_insert_idx(&self, module: &Module) -> Option<usize> {
@@ -69,7 +82,7 @@ impl VisitMut for WhitelabelRewriter {
                     DUMMY_SP,
                     Default::default(),
                 ))),
-                prop: MemberProp::Ident(IdentName::new(wl_key.clone().into(), DUMMY_SP)),
+                prop: MemberProp::Ident(IdentName::new(wl_key.as_str().into(), DUMMY_SP)),
             });
             self.has_modified = true;
         }
@@ -90,7 +103,7 @@ impl VisitMut for WhitelabelRewriter {
                         DUMMY_SP,
                         Default::default(),
                     ))),
-                    prop: MemberProp::Ident(IdentName::new(wl_key.clone().into(), DUMMY_SP)),
+                    prop: MemberProp::Ident(IdentName::new(wl_key.as_str().into(), DUMMY_SP)),
                 })),
             });
             self.has_modified = true;
@@ -109,7 +122,7 @@ impl VisitMut for WhitelabelRewriter {
                     DUMMY_SP,
                     Default::default(),
                 )),
-                prop: IdentName::new(wl_key.clone().into(), DUMMY_SP),
+                prop: IdentName::new(wl_key.as_str().into(), DUMMY_SP),
             });
 
             self.has_modified = true;
@@ -150,12 +163,11 @@ impl VisitMut for WhitelabelRewriter {
                 .parent()
                 .and_then(|path| util::compute_relative_import(path, abs_out_dir.as_path()))
             else {
-                eprintln!(
+                return self.errors.push(anyhow!(
                     "[Rewriter] Error while compute relative import between {}, {}",
                     current_filename.display(),
                     abs_out_dir.display()
-                );
-                return;
+                ));
             };
 
             let import_decl = ModuleItem::ModuleDecl(ModuleDecl::Import(ImportDecl {

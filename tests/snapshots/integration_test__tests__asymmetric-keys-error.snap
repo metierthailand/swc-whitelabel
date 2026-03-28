@@ -1,0 +1,6 @@
+---
+source: tests/integration_test.rs
+expression: e
+---
+[Registry module] Please check an implementation for following keys:
+(v1) B

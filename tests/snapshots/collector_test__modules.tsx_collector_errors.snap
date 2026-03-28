@@ -1,7 +1,5 @@
 ---
 source: tests/collector_test.rs
-expression: collector.errors
+expression: e.to_string()
 ---
-- Unsupported export declaration for whitelabel ./tests/fixtures/collector/reject_types/modules.tsx @5
-- Unsupported export declaration for whitelabel ./tests/fixtures/collector/reject_types/modules.tsx @8
-- Unsupported export declaration for whitelabel ./tests/fixtures/collector/reject_types/modules.tsx @11
+"- \"Unsupported export declaration for whitelabel ./tests/fixtures/collector/reject_types/modules.tsx @5\"\n- \"Unsupported export declaration for whitelabel ./tests/fixtures/collector/reject_types/modules.tsx @8\"\n- \"Unsupported export declaration for whitelabel ./tests/fixtures/collector/reject_types/modules.tsx @11\""

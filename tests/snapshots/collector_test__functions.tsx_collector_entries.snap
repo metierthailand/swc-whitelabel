@@ -2,33 +2,45 @@
 source: tests/collector_test.rs
 expression: "collector.entries.iter_mut().map(|e|\n{\n    let to_rel =\n    env::with_config(|cfg|\n    {\n        util::compute_relative_import(cfg.cwd.as_path(),\n        PathBuf::from(&e.import_path).as_path(),)\n    }); e.import_path = to_rel.unwrap(); e\n}).collect::<Vec<&mut WhitelabelEntry>>()"
 ---
-- target: def
+- target:
+    Targetted: def
   key: FN
   symbol: FN
   import_path: "./tests/fixtures/collector/accept_src/functions.tsx"
   _experiment_remark: "(a: string) => `Hello! ${a}`"
-- target: wl
+  optional: false
+- target:
+    Targetted: wl
   key: FN2
   symbol: FN2
   import_path: "./tests/fixtures/collector/accept_src/functions.tsx"
   _experiment_remark: "(a: string) => `Hello! 2 ${a}`"
-- target: bunny
+  optional: false
+- target:
+    Targetted: bunny
   key: FN3
   symbol: FN3
   import_path: "./tests/fixtures/collector/accept_src/functions.tsx"
   _experiment_remark: "(a: string) => `Hello! 3 ${a}`"
-- target: bunny
+  optional: false
+- target:
+    Targetted: bunny
   key: FN4
   symbol: FN4
   import_path: "./tests/fixtures/collector/accept_src/functions.tsx"
   _experiment_remark: "(a: string) => `Hello! 4 ${a}`"
-- target: bunny
+  optional: false
+- target:
+    Targetted: bunny
   key: FN
   symbol: BUNNY_FN
   import_path: "./tests/fixtures/collector/accept_src/functions.tsx"
   _experiment_remark: "(a: string) => `Bunny hello to ${a}!`"
-- target: def
+  optional: false
+- target:
+    Targetted: def
   key: feature_a_FN
   symbol: FN5
   import_path: "./tests/fixtures/collector/accept_src/functions.tsx"
   _experiment_remark: () => <div><h1>Hey</h1></div>
+  optional: false

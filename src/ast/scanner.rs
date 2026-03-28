@@ -1,5 +1,5 @@
+use anyhow::{Error, Ok, anyhow};
 use std::collections::HashMap;
-use std::fs;
 use std::path::PathBuf;
 use swc_core::common::Spanned;
 use swc_core::common::{SourceMap, sync::Lrc};
@@ -8,31 +8,43 @@ use swc_core::ecma::{
     visit::{Visit, VisitWith},
 };
 
-use crate::ast::collector::WhitelabelEntry;
+use crate::common::errorable::Errorable;
+use crate::common::registry::WhitelabelRegistry;
 use crate::config::env;
 use crate::util::report;
 
 // Scans the file for imports or local declarations that match known whitelabel symbols
 pub struct SymbolScanner<'a> {
     pub source_map: Lrc<SourceMap>,
-    pub global_symbols: &'a HashMap<String, Vec<WhitelabelEntry>>,
+    pub registry: &'a WhitelabelRegistry,
     pub target_ids: HashMap<Id, String>,
     pub path_mapping: &'a HashMap<String, Vec<String>>,
     current_file_name: Option<Lrc<swc_core::common::FileName>>,
+    errors: Vec<Error>,
+}
+
+impl<'a> Errorable<HashMap<Id, String>> for SymbolScanner<'a> {
+    fn into_result(self) -> anyhow::Result<HashMap<Id, String>> {
+        if !self.errors.is_empty() {
+            return Err(anyhow!("{}", self.format_multiple_errors(&self.errors)));
+        }
+        Ok(self.target_ids)
+    }
 }
 
 impl<'a> SymbolScanner<'a> {
     pub fn new(
-        global_symbols: &'a HashMap<String, Vec<WhitelabelEntry>>,
+        registry: &'a WhitelabelRegistry,
         source_map: Lrc<SourceMap>,
         path_mapping: &'a HashMap<String, Vec<String>>,
     ) -> Self {
         Self {
-            global_symbols,
+            registry,
             source_map,
             path_mapping,
             target_ids: HashMap::new(),
             current_file_name: None,
+            errors: vec![],
         }
     }
 
@@ -71,9 +83,11 @@ impl<'a> SymbolScanner<'a> {
                 base_paths_to_try.push(cwd.join(resolved_mapped));
             }
         } else {
+            // TODO node_modules / turbo repo
             return None;
         }
 
+        // TODO: remove resolution pass
         // 🎯 RESOLUTION PASS: The "Guess the Extension" Game
         let extensions = ["", "ts", "tsx", "js", "jsx", "./index.ts", "./index.tsx"];
         for base_path in base_paths_to_try {
@@ -129,84 +143,42 @@ impl<'a> Visit for SymbolScanner<'a> {
     fn visit_import_decl(&mut self, import: &ImportDecl) {
         // 1. Grab the raw string (e.g., "./foo" or "@repo/foo")
         let Some(import_src) = import.src.value.as_str() else {
-            return;
+            return self.errors.push(anyhow!(
+                "[SymbolScanner.visit_import_decl] Couldn't resolve import.src.value: {:?}",
+                import.src.value
+            ));
+        };
+
+        let Some(current_file_name) = &self.current_file_name else {
+            return self.errors.push(anyhow!(
+                "[SymbolScanner.visit_import_decl] current_file_name is not loaded",
+            ));
         };
 
         // 2. Discriminate based on the Node.js resolution rules
-        let mut lazy_resolved_path: Option<PathBuf> = None;
+        let Some(resolved_path) =
+            self.resolve_import(current_file_name.to_string().into(), import_src)
+        else {
+            return;
+        };
 
         // 2. Process specifiers and strictly compare paths!
         for specifier in &import.specifiers {
             if let ImportSpecifier::Named(named) = specifier {
                 let imported_name = match &named.imported {
                     Some(ModuleExportName::Ident(ident)) => ident.sym.to_string(),
-                    Some(ModuleExportName::Str(s)) => s
-                        .value
-                        .as_str()
-                        .unwrap_or_else(|| panic!("Malformed ModuleExportName::Str({:?})", s))
-                        .into(),
+                    Some(ModuleExportName::Str(s)) => match s.value.as_str() {
+                        Some(str) => str.into(),
+                        None => {
+                            return self
+                                .errors
+                                .push(anyhow!("Malformed ModuleExportName::Str({:?})", s));
+                        }
+                    },
                     None => named.local.sym.to_string(),
                 };
 
-                // 3. MATHEMATICAL CERTAINTY: Does the absolute resolved path exactly match
-                // the file where the symbol was originally collected?
-                if let Some(entries) = self.global_symbols.get(&imported_name) {
-                    let resolved_path = match &lazy_resolved_path {
-                        Some(r) => r,
-                        None => {
-                            lazy_resolved_path =
-                                self.current_file_name
-                                    .as_ref()
-                                    .and_then(|current_file_name| {
-                                        self.resolve_import(
-                                            current_file_name.to_string().into(),
-                                            import_src,
-                                        )
-                                    });
-                            match lazy_resolved_path.as_ref() {
-                                Some(resolved_path) => resolved_path,
-                                None => {
-                                    report(|| {
-                                        if let Some(file_name) = self.current_file_name.as_ref() {
-                                            println!(
-                                                "\t ⚠️ [Warning] Could not resolve import '{}' in {}. Skipping...",
-                                                import_src, file_name
-                                            );
-                                        }
-                                    });
-                                    continue;
-                                }
-                            }
-                        }
-                    };
-
-                    if let Some(entry) =
-                        entries
-                            .iter()
-                            .find(|entry| match fs::canonicalize(resolved_path) {
-                                Ok(abs_resolved_path) => {
-                                    let absolute_import_path = env::with_config(|cfg| {
-                                        cfg.cwd.join(&cfg.src).join(&entry.import_path)
-                                    });
-                                    let match_exact = match fs::canonicalize(&absolute_import_path)
-                                    {
-                                        Ok(path) => path == abs_resolved_path,
-                                        _ => true,
-                                    };
-
-                                    let match_parent = match fs::canonicalize(&absolute_import_path)
-                                        .map(|pb| pb.parent().map(|parent| parent.to_path_buf()))
-                                    {
-                                        Ok(parent) => {
-                                            parent.unwrap_or_default() == abs_resolved_path
-                                        }
-                                        _ => true,
-                                    };
-
-                                    match_exact || match_parent
-                                }
-                                _ => false,
-                            })
+                if let Some(entry) = self.registry.lookup(&imported_name, &resolved_path) {
                     {
                         report(|| {
                             if let Some(file_name) = self.current_file_name.as_ref() {
@@ -224,17 +196,10 @@ impl<'a> Visit for SymbolScanner<'a> {
     fn visit_var_declarator(&mut self, decl: &VarDeclarator) {
         if let Pat::Ident(ident) = &decl.name
             && let name = ident.id.sym.to_string()
-            && let Some(entries) = self.global_symbols.get(&name)
-            && let Some(entry) = entries.iter().find(|e| {
-                let absolute_import_path =
-                    env::with_config(|cfg| cfg.cwd.join(&cfg.src).join(&e.import_path));
-
-                // FIXME: There can be case where None = None
-                self.current_file_name
-                    .as_ref()
-                    .and_then(|file| fs::canonicalize(file.to_string()).ok())
-                    == fs::canonicalize(&absolute_import_path).ok()
-            })
+            && let Some(current_file_name) = &self.current_file_name
+            && let Some(entry) = self
+                .registry
+                .lookup(&name, &current_file_name.to_string().into())
         {
             report(|| {
                 if let Some(file_name) = self.current_file_name.as_ref() {

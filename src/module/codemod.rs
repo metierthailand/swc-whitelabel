@@ -1,6 +1,4 @@
-use anyhow::Result;
-use std::collections::HashMap;
-use std::fs;
+use anyhow::{Result, anyhow};
 use swc_core::common::SourceFile;
 use swc_core::{
     common::{Mark, SourceMap, comments::SingleThreadedComments, sync::Lrc},
@@ -13,25 +11,17 @@ use swc_core::{
     },
 };
 
-use crate::ast::collector::{WhitelabelCollector, WhitelabelEntry};
 use crate::ast::rewriter::WhitelabelRewriter;
 use crate::ast::scanner::SymbolScanner;
+use crate::common::{errorable::Errorable, registry::WhitelabelRegistry};
 use crate::config::{env, tsconfig};
 use crate::util::report;
+use crate::util::transactional::TxFS;
 
-pub fn exec(cm: &Lrc<SourceMap>, collector: WhitelabelCollector<'_>) -> Result<Vec<String>> {
-    let mut global_symbols: HashMap<String, Vec<WhitelabelEntry>> = HashMap::new();
+pub fn exec(cm: &Lrc<SourceMap>, registry: &WhitelabelRegistry) -> Result<Vec<String>> {
     let mut modified_files: Vec<String> = Vec::new();
     let ts_cfg = env::with_config(|cfg| tsconfig::load(cfg.tsconfig.clone()))?;
     let output_dir = env::with_config(|cfg| cfg.output_dir.clone());
-
-    // 🎯 IDIOMATIC: Consuming the iterator (Value Move)
-    for entry in collector.entries.into_iter() {
-        global_symbols
-            .entry(entry.symbol.clone())
-            .or_default()
-            .push(entry); // The struct is MOVED, not cloned!
-    }
 
     let files: Vec<Lrc<SourceFile>> = {
         // 🔒 Acquire the lock
@@ -59,7 +49,7 @@ pub fn exec(cm: &Lrc<SourceMap>, collector: WhitelabelCollector<'_>) -> Result<V
         let mut parser = Parser::new_from(lexer);
         let mut program = match parser.parse_program() {
             Ok(p) => p,
-            Err(_) => continue,
+            Err(e) => return Err(anyhow!("{:?}", e)),
         };
 
         let unresolved_mark = Mark::new();
@@ -68,18 +58,19 @@ pub fn exec(cm: &Lrc<SourceMap>, collector: WhitelabelCollector<'_>) -> Result<V
         program.visit_mut_with(&mut resolver(unresolved_mark, top_level_mark, false));
 
         use swc_core::ecma::visit::VisitWith;
-        let mut scanner =
-            SymbolScanner::new(&global_symbols, cm.clone(), &ts_cfg.compiler_options.paths);
+        let mut scanner = SymbolScanner::new(registry, cm.clone(), &ts_cfg.compiler_options.paths);
         program.visit_with(&mut scanner);
 
-        if scanner.target_ids.is_empty() {
+        let target_ids = scanner.into_result()?;
+
+        if target_ids.is_empty() {
             continue;
         }
 
-        let mut rewriter = WhitelabelRewriter::new(cm.clone(), scanner.target_ids, false);
+        let mut rewriter = WhitelabelRewriter::new(cm.clone(), target_ids, false);
         program.visit_mut_with(&mut rewriter);
 
-        if rewriter.has_modified {
+        if rewriter.into_result()? {
             let filename = fm.name.to_string();
             let mut buf = vec![];
             let mut emitter = Emitter {
@@ -91,7 +82,9 @@ pub fn exec(cm: &Lrc<SourceMap>, collector: WhitelabelCollector<'_>) -> Result<V
                 wr: JsWriter::new(cm.clone(), "\n", &mut buf, None),
             };
             emitter.emit_program(&program)?;
-            fs::write(&filename, String::from_utf8(buf)?)?;
+
+            TxFS::with_buffer(|fs| fs.write(&filename, buf))?;
+
             modified_files.push(filename.clone());
 
             report(|| {

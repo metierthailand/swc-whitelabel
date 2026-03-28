@@ -12,44 +12,53 @@ We design this tool under the assumption that developers will be disciplined wit
 
 We ruthlessly prioritize our backlog based on **Blast Radius and Risk Mitigation**. If you want to contribute but aren't sure where to start, check out the milestones below! We are actively targeting **P0** and **P1** issues.
 
-### 🚨 P0: The "Do No Harm" Release (Fixing Corruption & Crashes)
-**Goal:** Guarantee that running `wl-extractor` will *never* break a working application, either at compile-time or runtime.
+### 🚨 P0: The "Do No Harm" Release (Fixing Corruption, Crashes & Compliance)
+**Goal:** Guarantee that running `wl-extractor` will *never* break a working application, and ensure the tool is operationally safe for external teams to adopt.
 
-* [x] **1. ES Module Circular Dependencies (Runtime App Crash):** If our codemod forces a top-level read of an uninitialized lexical binding, the ES Module loader throws a `ReferenceError`. We must output cyclic-safe code (e.g., getter functions).
-* [x] **2. Idempotency (Double-writes):** Running the tool twice must yield the exact same file state. No duplicate `import whitelabel from...` injections.
-* [ ] **3. Optional `compilerOptions.paths`:** Many valid TypeScript projects don't use `paths`. The tool currently crashes via `expect("Failed to load tsconfig.json")` if this is missing. It must default to an empty map instead of panicking.
-* [x] **4. Graceful Unresolved Imports:** Right now, one bad/unresolvable import causes an `expect()` panic that aborts the entire codemod. Unresolved imports should log a warning and be skipped, not crash the binary.
-* [x] **5. JSX Closing Tags (Syntax Corruption):** The codemod must rewrite `</BrandAHeader>` to `</whitelabel.HeroHeader>`, otherwise the React AST is physically broken.
+* [x] **1. Transactional Codemods:** Stage all file writes, ensure the tool fails fast on errors, and implement rollbacks to prevent partial repository migrations.
+* [x] **2. ES Module Circular Dependencies (Runtime App Crash):** Output cyclic-safe code (e.g., getter functions) to prevent `ReferenceError`s from uninitialized lexical bindings.
+* [x] **3. Idempotency (Double-writes):** Running the tool twice must yield the exact same file state. 
+  * [ ] *Action:* Upgrade injection detection to rely on AST and config validation rather than simple string matching.
+* [x] **4. Stop Silent Omissions:** Log warnings for any unresolved imports or parse failures instead of silently skipping files (e.g., dropping the `Err(_) => continue` pattern).
+* [ ] **5. Optional `compilerOptions.paths`:** The tool currently crashes if `paths` is missing in `tsconfig.json`. It must default to an empty map instead of panicking.
+* [x] **6. Graceful Unresolved Imports:** Unresolved imports should log a warning and be skipped, not crash the binary.
+* [x] **7. JSX Closing Tags (Syntax Corruption):** Rewrite `</BrandAHeader>` to `</whitelabel.HeroHeader>` to preserve React AST integrity.
 
-### 🛑 P1: The "Adoption Blocker" Release (Fixing Panics)
-**Goal:** Ensure the tool runs smoothly on standard, messy real-world repositories without throwing Rust `panic!` traces.
+### 🛑 P1: The "Adoption Blocker" Release (Stability & Predictability)
+**Goal:** Ensure the tool runs smoothly on standard, messy real-world repositories without throwing Rust `panic!` traces and behaves predictably.
 
-* [ ] **6. Halt on Validation Errors & Fix CLI Exit Codes:** Stop swallowing errors in `main.rs`. If the collector finds an invalid directive, the tool **must fail with a non-zero exit code** and halt before the codemod phase. "Partial success" is unacceptable for codebase-wide migrations.
-* [x] **7. Eradicate `unwrap/expect/panic` in `run.rs`:** Convert all initialization, glob parsing, and file I/O errors into contextual `anyhow::Result` user-facing error messages. 
+* [x] **8. Halt on Validation Errors & Fix CLI Exit Codes:** If the collector finds an invalid directive, the tool **must fail with a non-zero exit code** and halt. "Partial success" is unacceptable.
+* [x] **9. Eradicate `unwrap/expect/panic` in `run.rs`:** Convert initialization, glob parsing, and file I/O errors into contextual `anyhow::Result` user-facing error messages.
+  * [x] *Action:* Eliminate remaining `todo!()` macros in the execution hot path.
+* [ ] **10. Secure Path Resolution:** Validate that user-provided configuration patterns cannot escape the intended source root directory.
+* [ ] **11. Define Public Contract:** Establish a versioned configuration schema and a clear compatibility matrix for users.
+* [ ] **12. Comprehensive E2E Tests:** Expand `tests/integration_test.rs` to cover alias-heavy imports, malformed configs, self-closing JSX, multi-declarator exports, and syntax errors.
 
-### 🟡 P2: The "Data Fidelity" Release (Fixing Silent Omissions)
-**Goal:** Guarantee that if a developer writes valid code or configurations, the tool captures it perfectly and warns them if they make a logical mistake.
+### 🟡 P2: The "Data Fidelity & Polish" Release
+**Goal:** Guarantee perfect capture of developer intent, establish performance baselines, and formalize the release process.
 
-* [x] **8. Duplicate Key Detection:** Fail loudly if two exports target the same `key` for the same brand, preventing silent HashMap overwrites and missing logic.
-* [ ] **9. Log Silent Parse Skips:** Currently, `Err(_) => continue` silently skips unparseable files. Emit a console warning so users know a file wasn't transformed.
-* [ ] **10. Enterprise Optionality (`optional` & `null as never`):** Inject `null as never` for keys that aren't implemented in the default whitelabel, forcing TypeScript to catch missing tenant features at compile-time rather than crashing at runtime.
-* [x] **11. Implement CFG Grammar for Directives:** Allow flexible, shuffled comma-separated parameters in the `// whitelabel:` comments.
+* [x] **13. Duplicate Key Detection:** Fail loudly if two exports target the same `key` for the same brand.
+* [x] **14. Enterprise Optionality (`optional` & `null as never`):** Inject `null as never` for keys that aren't implemented in the default whitelabel, forcing TypeScript compilation errors over runtime crashes.
+* [x] **15. Implement CFG Grammar for Directives:** Allow flexible, shuffled comma-separated parameters in the `// whitelabel:` comments.
+* [ ] **16. Multi-Declarator Exports:** Support `export const A = 1, B = 2;` instead of silently dropping `B` via `decls.first()`.
+* [ ] **17. Formalize Release Engineering:** Adopt semantic versioning, utilize GitHub tags, and maintain a structured changelog.
+* [ ] **18. Establish Performance Baselines:** Benchmark the tool against large repository fixtures to track runtime and memory footprint scaling.
 
 ### 🛠️ P3: The "Engineering Rigor" Release (Tech Debt & CI)
-**Goal:** Make the codebase a joy to contribute to and mathematically proven to work.
+**Goal:** Make the codebase a joy to contribute to, secure, and mathematically proven to work.
 
-* [x] **12. Destroy the Global `OnceLock`:** Refactor `src/config/config.rs`. Passing a `&WhitelabelConfig` context down the pipeline eliminates the testability trap and allows for concurrent test runners.
-* [x] **13. CI/CD Hardening:** Update GitHub Actions to include `cargo fmt --check`, `cargo clippy -- -D warnings`, and a release build verification.
-* [ ] **14. Comprehensive E2E Tests:** Expand `tests/integration_test.rs` to cover alias-heavy imports, malformed configs, self-closing JSX, and unresolved imports.
+* [x] **19. Destroy the Global `OnceLock`:** Refactor `src/config/config.rs`. Passing a `&WhitelabelConfig` context down the pipeline eliminates the testability trap.
+* [x] **20. CI/CD Hardening:** Include `cargo fmt --check`, `cargo clippy -- -D warnings`, and a release build verification.
+  * [ ] *Action:* Add automated CI gates to enforce idempotency (zero diffs on second run) and strict non-zero exit codes on failure.
+* [ ] **21. Automate Security Checks:** Implement dependency audits and establish allow/deny policies for third-party crates.
+* [ ] **22. Add Governance Documentation:** Create a `CODE_OF_CONDUCT.md`, `SECURITY.md`, and standardized issue/PR templates for contributors.
 
-### 🎨 P4: The "Documentation & Polish" Release
+### 🎨 P4: The "Documentation" Release
 **Goal:** Align the README promises with the actual code behavior and improve DX.
 
-* [ ] **15. Clarify Resolver Semantics:** Update the README to explicitly state that the resolver supports `paths` and wildcard matching, but does *not* claim 100% Node.js/TypeScript parity (like missing `baseUrl`).
-* [ ] **16. Document Brand Selection Strategy:** Frame the `NEXT_PUBLIC_WHITELABEL` generated code as a "starter strategy" that users can customize for SSR/multi-tenant routing.
-* [ ] **17. Clean up `package.json`:** Either explain why it's there (for fixture linting) or delete it to keep the Rust repo focused.
-* [ ] **18. Multi-Declarator Exports:** Support `export const A = 1, B = 2;` instead of silently dropping `B` via `decls.first()`.
-
+* [ ] **23. Clarify Resolver Semantics:** Update the README to explicitly state that the resolver supports `paths` and wildcard matching, but does *not* claim 100% Node.js parity.
+* [x] **24. Document Brand Selection Strategy:** Frame the `NEXT_PUBLIC_WHITELABEL` generated code as a "starter strategy".
+* [ ] **25. Clean up `package.json`:** Either explain why it's there (for fixture linting) or delete it to keep the Rust repo focused.
 
 ---
 
@@ -59,7 +68,7 @@ To get a local development environment running:
 
 1. **Clone the repository:**
    ```bash
-   git clone [https://github.com/metierthailand/swc-whitelabel.git](https://github.com/metierthailand/swc-whitelabel.git)
+   git clone https://github.com/metierthailand/swc-whitelabel.git
    cd swc-whitelabel
    ```
 2. **Run the test suite:**

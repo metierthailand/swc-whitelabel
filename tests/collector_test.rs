@@ -10,6 +10,7 @@ use swc_core::{
 use testing::fixture;
 use wl_extractor::{
     ast::collector::{WhitelabelCollector, WhitelabelEntry},
+    common::errorable::Errorable,
     config::env,
     util,
 };
@@ -51,26 +52,30 @@ fn test_collectors(path: PathBuf) {
 
     module.visit_with(&mut collector);
 
-    insta::assert_yaml_snapshot!(
-        format!("{}_collector_errors", path.file_name().unwrap().display()),
-        collector.errors
-    );
-
-    insta::assert_yaml_snapshot!(
-        format!("{}_collector_entries", path.file_name().unwrap().display()),
-        collector
-            .entries
-            .iter_mut()
-            .map(|e| {
-                let to_rel = env::with_config(|cfg| {
-                    util::compute_relative_import(
-                        cfg.cwd.as_path(),
-                        PathBuf::from(&e.import_path).as_path(),
-                    )
-                });
-                e.import_path = to_rel.unwrap();
-                e
-            })
-            .collect::<Vec<&mut WhitelabelEntry>>()
-    );
+    match collector.into_result() {
+        Ok(mut entries) => {
+            insta::assert_yaml_snapshot!(
+                format!("{}_collector_entries", path.file_name().unwrap().display()),
+                entries
+                    .iter_mut()
+                    .map(|e| {
+                        let to_rel = env::with_config(|cfg| {
+                            util::compute_relative_import(
+                                cfg.cwd.as_path(),
+                                PathBuf::from(&e.import_path).as_path(),
+                            )
+                        });
+                        e.import_path = to_rel.unwrap();
+                        e
+                    })
+                    .collect::<Vec<&mut WhitelabelEntry>>()
+            );
+        }
+        Err(e) => {
+            insta::assert_yaml_snapshot!(
+                format!("{}_collector_errors", path.file_name().unwrap().display()),
+                e.to_string()
+            );
+        }
+    }
 }

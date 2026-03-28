@@ -1,5 +1,5 @@
 // auto-generated: "lalrpop 0.23.1"
-// sha3: 16bc363153effd6bedf0827c9706581a5597f4f15d8116f14dcaa7b58f09131d
+// sha3: e525ae28759b76f2b87b8f14f92331600621b24001a0227d1ed9a42475486b1c
 use lalrpop_util::ParseError;
 use crate::ast::parser::ast;
 use crate::ast::parser::ast::{
@@ -1641,9 +1641,17 @@ fn __action13<
             .iter()
             .any(|m| matches!(m, ast::Modifier::ForModifier(ast::ForModifier::For(_))));
 
+        let is_optional_exists = all
+            .iter()
+            .any(|m| matches!(m, ast::Modifier::Optional(_)));
+
         if is_wildcard_exists && is_targeted_for_exists {
             Err(ParseError::User {
                 error: DirectiveError::ForOrWildcardConflict,
+            })
+        } else if is_optional_exists && is_wildcard_exists {
+            Err(ParseError::User {
+                error: DirectiveError::WildcardOrOptionalConflict,
             })
         } else {
             Ok(all)

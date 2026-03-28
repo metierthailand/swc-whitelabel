@@ -1,9 +1,7 @@
-
-
+use anyhow::{Result, anyhow};
 use swc_core::common::{SourceFile, SourceMap, sync::Lrc};
 
 use std::collections::HashMap;
-use std::fs;
 use swc_core::{
     common::comments::SingleThreadedComments,
     ecma::{
@@ -14,9 +12,10 @@ use swc_core::{
     },
 };
 
-use crate::ast;
+use crate::{ast, util::transactional::TxFS};
 
-pub fn exec(cm: &Lrc<SourceMap>, rename_map: &HashMap<String, String>) -> Vec<String> {
+#[allow(unused)]
+pub fn exec(cm: &Lrc<SourceMap>, rename_map: &HashMap<String, String>) -> Result<Vec<String>> {
     let comments = SingleThreadedComments::default();
     let mut modified_files: Vec<String> = Vec::new();
     let files: Vec<Lrc<SourceFile>> = {
@@ -40,7 +39,7 @@ pub fn exec(cm: &Lrc<SourceMap>, rename_map: &HashMap<String, String>) -> Vec<St
         let mut parser = Parser::new_from(lexer);
         let mut program = match parser.parse_program() {
             Ok(p) => p,
-            Err(_) => continue,
+            Err(e) => return Err(anyhow!("{:?}", e)),
         };
 
         let mut wl_rename = ast::rename::WhitelabelRename {
@@ -62,10 +61,10 @@ pub fn exec(cm: &Lrc<SourceMap>, rename_map: &HashMap<String, String>) -> Vec<St
             };
             let _ = emitter.emit_program(&program);
             if let Ok(code) = String::from_utf8(buf) {
-                let _ = fs::write(fm.name.to_string(), code);
+                TxFS::with_buffer(|fs| fs.write(fm.name.to_string(), code))?;
             }
         }
     }
 
-    modified_files
+    Ok(modified_files)
 }
