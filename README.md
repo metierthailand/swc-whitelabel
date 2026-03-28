@@ -46,9 +46,11 @@ The directive parser uses a formal Context-Free Grammar (CFG), allowing for a hi
 WHITELABEL [ ":" ] [ modifier [, modifier ...] ]
 
 modifier:
-    FOR [ "=" | ":" ] value
+    "*"
+  | FOR [ "=" | ":" ] value
   | KEY ( "=" | ":" ) value
   | AS  [ "=" | ":" ] value
+  | OPTIONAL
 
 value:
     string
@@ -58,9 +60,11 @@ value:
 
 **Available Modifiers (Case-Insensitive):**
 
+* **`*` (Wildcard)**: Applies the exported symbol to *all* known targets in your project. Cannot be combined with `for` or `optional`.
 * **`for`**: (Optional) The specific brand/tenant this code applies to. You can use `=`, `:`, or omit the operator entirely (e.g., `for=variant1`, `for:'variant1'`, or `for variant1`). If omitted, it falls back to the `default_target` defined in your config.
 * **`key`**: (Optional) A custom key for the registry. Requires `=` or `:` (e.g., `key=BG_COLOR`). If omitted, the tool uses the variable's original exported name.
 * **`as`**: (Optional) An ergonomic alias for `key` that does not require an operator (e.g., `as BG_COLOR`).
+* **`optional`**: Marks the key as explicitly optional. The registry will safely inject `undefined` for any targets that do not implement this key, forcing TypeScript compilation errors over runtime crashes. Cannot be combined with `*`.
 
 *Note: The `:` immediately following `whitelabel` is entirely optional. Modifier values can be unquoted, single-quoted (`'...'`), or double-quoted (`"..."`).*
 
@@ -90,6 +94,20 @@ export const variant2_bgClassname: string = "bg-red-300";
  */
 // whitelabel for variant3 as BG_COLOR
 export const variant3_bgClassname: string = "bg-red-400";
+
+/**
+ * 5. Wildcard marker
+ * Applies this variable to all targets globally.
+ */
+// whitelabel *
+export const DEFAULT_HEADER = "Header";
+
+/**
+ * 6. Optional marker
+ * If other targets don't implement this, they safely receive `undefined`.
+ */
+// whitelabel optional, for=variant1
+export const VARIANT_ONLY_FEATURE = true;
 ```
 
 ### 2. Run the Extractor
@@ -107,8 +125,7 @@ _(Tip: For CI/CD or piping to Prettier, use `wl-extractor --file-name-only` to s
 The tool will automatically generate a registry in your `output_dir` containing:
 
 1.  `brandA.generated.tsx` and `brandB.generated.tsx`
-2.  An `index.ts` that unites them into a strictly typed `WhitelabelConfig`.
-3.  A `determine-whitelabel.ts` file that uses `process.env.NEXT_PUBLIC_WHITELABEL` to select the current brand.
+2.  A customizable `index.ts` starter template. Unlike the generated files, this file is yours to edit! It unites the targets into a strictly typed `WhitelabelConfig` and provides a template for you to wire up your own runtime/SSR brand resolution logic.
 
 **Most importantly, it rewrites your local usages.** If you imported `BrandAHeader` somewhere else in your code, the tool transforms it:
 
@@ -187,7 +204,7 @@ The extractor operates in three distinct phases using `swc_core` for robust Abst
 
 ### Phase 2: Generation (`src/generator/*.rs`)
 
-1.  The tool groups the collected entries by their `target` (e.g., all entries for `brandA`).
+1.  The collected entries are fed into a central `WhitelabelRegistry`. This registry acts as the source of truth, validating duplicate keys, fanning out wildcard (`*`) configurations, and injecting `undefined` fallbacks for `optional` keys.
 2.  It writes `[target].generated.tsx` files, importing the original symbols from their physical paths and structuring them into a single object.
 3.  It generates an `index.ts` file that imports all target files and exports a unified TypeScript union and config record.
 
@@ -203,3 +220,4 @@ This is the most complex phase. The tool must safely replace local variables wit
     - **JSX Elements:** `<Foo />` becomes `<whitelabel.Foo />`.
 4.  **Import Injection:** If a file was modified, the tool calculates a dynamic, safe relative path from the current file to the generated registry using `pathdiff`. It then injects `import whitelabel from "..."` at the top of the AST.
 5.  **Rename Detection:** If you change a `key` in your magic comment, the tool parses the _old_ generated registry, detects the diff, and runs a secondary codemod to rename all `whitelabel.oldKey` to `whitelabel.newKey` across the entire codebase.
+6.  **Transactional Codemods (`TxFS`):** To guarantee project safety, all file modifications are staged in an isolated, in-memory buffer. A single atomic `.commit()` is executed at the very end of the pipeline. If any file write fails, the entire codemod rolls back, ensuring your repository is never left in a partially migrated state.
