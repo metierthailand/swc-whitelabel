@@ -132,9 +132,7 @@ pub fn generate(registry: &WhitelabelRegistry) -> String {
               return new VariantConfig();
             }}
             "#,
-            // "  {}: require('./{}.generated').default,\n",
-            target,
-            target
+            target, target
         ));
     }
     index_content.push_str(&configs);
