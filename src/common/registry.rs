@@ -70,14 +70,12 @@ impl WhitelabelRegistry {
     }
 
     pub fn lookup(&self, name: &String, path: &PathBuf) -> Option<WhitelabelEntry> {
-        let Some(entries) = self.pivoted.get(name).map(|targets| {
+        let entries = self.pivoted.get(name).map(|targets| {
             targets
                 .iter()
                 .filter_map(|t| self.table.get(t)?.get(name))
                 .collect::<Vec<_>>()
-        }) else {
-            return None;
-        };
+        })?;
 
         let import_match = entries.iter().find(|entry| match fs::canonicalize(path) {
             Ok(abs_resolved_path) => {
