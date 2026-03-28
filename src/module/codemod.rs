@@ -1,5 +1,4 @@
 use anyhow::{Result, anyhow};
-use std::fs;
 use swc_core::common::SourceFile;
 use swc_core::{
     common::{Mark, SourceMap, comments::SingleThreadedComments, sync::Lrc},
@@ -17,6 +16,7 @@ use crate::ast::scanner::SymbolScanner;
 use crate::common::{errorable::Errorable, registry::WhitelabelRegistry};
 use crate::config::{env, tsconfig};
 use crate::util::report;
+use crate::util::transactional::TxFS;
 
 pub fn exec(cm: &Lrc<SourceMap>, registry: &WhitelabelRegistry) -> Result<Vec<String>> {
     let mut modified_files: Vec<String> = Vec::new();
@@ -82,7 +82,9 @@ pub fn exec(cm: &Lrc<SourceMap>, registry: &WhitelabelRegistry) -> Result<Vec<St
                 wr: JsWriter::new(cm.clone(), "\n", &mut buf, None),
             };
             emitter.emit_program(&program)?;
-            fs::write(&filename, String::from_utf8(buf)?)?;
+
+            TxFS::with_buffer(|fs| fs.write(&filename, buf))?;
+
             modified_files.push(filename.clone());
 
             report(|| {

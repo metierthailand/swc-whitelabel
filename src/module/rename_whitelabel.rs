@@ -2,7 +2,6 @@ use anyhow::{Result, anyhow};
 use swc_core::common::{SourceFile, SourceMap, sync::Lrc};
 
 use std::collections::HashMap;
-use std::fs;
 use swc_core::{
     common::comments::SingleThreadedComments,
     ecma::{
@@ -13,7 +12,7 @@ use swc_core::{
     },
 };
 
-use crate::ast;
+use crate::{ast, util::transactional::TxFS};
 
 #[allow(unused)]
 pub fn exec(cm: &Lrc<SourceMap>, rename_map: &HashMap<String, String>) -> Result<Vec<String>> {
@@ -62,7 +61,7 @@ pub fn exec(cm: &Lrc<SourceMap>, rename_map: &HashMap<String, String>) -> Result
             };
             let _ = emitter.emit_program(&program);
             if let Ok(code) = String::from_utf8(buf) {
-                let _ = fs::write(fm.name.to_string(), code);
+                TxFS::with_buffer(|fs| fs.write(fm.name.to_string(), code))?;
             }
         }
     }

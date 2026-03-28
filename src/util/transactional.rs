@@ -1,6 +1,11 @@
+use std::cell::RefCell;
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
+
+thread_local! {
+  static TX_FS: RefCell<TxFS> = RefCell::new(TxFS::default())
+}
 
 #[derive(Default)]
 pub struct TxFS {
@@ -11,6 +16,18 @@ pub struct TxFS {
 impl TxFS {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn with_buffer<F, R>(f: F) -> R
+    where
+        F: FnOnce(&mut TxFS) -> R,
+    {
+        TX_FS.with(|tx| {
+            // borrow_mut() enforces that you only have one mutable
+            // reference active at a time on this thread!
+            let mut tx_fs = tx.borrow_mut();
+            f(&mut tx_fs)
+        })
     }
 
     /// Buffers a file write in memory. Does not touch the filesystem.

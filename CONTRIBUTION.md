@@ -15,7 +15,7 @@ We ruthlessly prioritize our backlog based on **Blast Radius and Risk Mitigation
 ### 🚨 P0: The "Do No Harm" Release (Fixing Corruption, Crashes & Compliance)
 **Goal:** Guarantee that running `wl-extractor` will *never* break a working application, and ensure the tool is operationally safe for external teams to adopt.
 
-* [ ] **1. Transactional Codemods:** Stage all file writes, ensure the tool fails fast on errors, and implement rollbacks to prevent partial repository migrations.
+* [x] **1. Transactional Codemods:** Stage all file writes, ensure the tool fails fast on errors, and implement rollbacks to prevent partial repository migrations.
 * [x] **2. ES Module Circular Dependencies (Runtime App Crash):** Output cyclic-safe code (e.g., getter functions) to prevent `ReferenceError`s from uninitialized lexical bindings.
 * [x] **3. Idempotency (Double-writes):** Running the tool twice must yield the exact same file state. 
   * [ ] *Action:* Upgrade injection detection to rely on AST and config validation rather than simple string matching.

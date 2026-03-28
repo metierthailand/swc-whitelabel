@@ -17,7 +17,7 @@ use swc_core::{
 
 use swc_core::common::{GLOBALS, Globals};
 
-use crate::{ast, common::registry::WhitelabelRegistry};
+use crate::{ast, common::registry::WhitelabelRegistry, util::transactional::TxFS};
 use crate::{common::errorable::Errorable, generator};
 use crate::{config, module};
 
@@ -115,7 +115,7 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
         fs::create_dir_all(&output_dir)?;
 
         let target_path = output_dir.join("whitelabel.ts");
-        fs::write(&target_path, generator::whitelabel::generate(&registry))?;
+        TxFS::with_buffer(|fs| fs.write(&target_path, generator::whitelabel::generate(&registry)))?;
         modified_files.push(target_path.to_string_lossy().to_string());
 
         for target in registry.targets() {
@@ -123,7 +123,7 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
 
             let output = generator::wl::generate(entry);
             let target_path = format!("{}/{}.generated.tsx", output_dir.display(), target);
-            fs::write(&target_path, output)?;
+            TxFS::with_buffer(|fs| fs.write(&target_path, output))?;
 
             report(|| {
                 println!("\t💼 {} ✅", target_path);
@@ -142,10 +142,12 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
                 );
             });
         } else {
-            fs::write(
-                &wrapper,
-                generator::index::generate(cfg.default_target.clone()),
-            )?;
+            TxFS::with_buffer(|fs| {
+                fs.write(
+                    &wrapper,
+                    generator::index::generate(cfg.default_target.clone()),
+                )
+            })?;
             modified_files.push(wrapper.to_string_lossy().to_string());
         }
 
@@ -170,6 +172,9 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
         //     let renamed_files = module::rename_whitelabel::exec(&cm, &rename_map);
         //     modified_files.extend(renamed_files);
         // }
+        //
+
+        TxFS::with_buffer(|fs| fs.commit())?;
 
         report(|| {
             // Friendly summary for human execution
