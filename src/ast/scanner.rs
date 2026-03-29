@@ -1,6 +1,6 @@
 use anyhow::{Error, Ok, anyhow};
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::Path;
 use swc_core::common::Spanned;
 use swc_core::common::{SourceMap, sync::Lrc};
 use swc_core::ecma::{
@@ -119,7 +119,7 @@ impl<'a> Visit for SymbolScanner<'a> {
             && let name = ident.id.sym.to_string()
             && let Some(current_file_name) = &self.current_file_name
             && let Some(resolved_current_file_name) =
-                cname(PathBuf::from(&current_file_name.to_string()))
+                cname(Path::new(&current_file_name.to_string()))
             && let Some(entry) = self.registry.lookup(&name, &resolved_current_file_name)
         {
             report(|| {

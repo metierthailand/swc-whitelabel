@@ -19,13 +19,13 @@ impl TsImportPathResolver {
         if import_src.starts_with('.')
             && let Some(parent) = current_file_path.parent()
         {
-            return cname(parent.join(import_src));
+            return cname(parent.join(import_src).as_path());
         }
         /* 🎯 CATEGORY 2: TSConfig Path Resolution */
         // Step 1: Check for an EXACT match (e.g., "@/app/whitelabel")
         else if let Some(mapped_path) = self.path_mapping.get(import_src) {
             // Only first in record
-            return cname(cwd.join(mapped_path));
+            return cname(cwd.join(mapped_path).as_path());
         }
         // Step 2: Check for a WILDCARD match (e.g., "@app/*")
         else if let Some((pattern, mapped_path, _)) = self.best_path_mapping_match(import_src)
@@ -39,7 +39,7 @@ impl TsImportPathResolver {
 
             let resolved_mapped = mapped_path.replace("*", wildcard_match);
 
-            return cname(cwd.join(resolved_mapped));
+            return cname(cwd.join(resolved_mapped).as_path());
         }
 
         // TODO node_modules / turbo repo

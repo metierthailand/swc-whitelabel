@@ -87,20 +87,14 @@ impl WhitelabelRegistry {
             };
 
             let Some(absolute_import_path) =
-                env::with_config(|cfg| cname(cfg.cwd.join(&cfg.src).join(import_path)))
+                env::with_config(|cfg| cname(cfg.cwd.join(&cfg.src).join(import_path).as_path()))
             else {
                 return false;
             };
 
             let match_exact = absolute_import_path == abs_resolved_path;
 
-            let match_parent = match absolute_import_path
-                .parent()
-                .map(|parent| parent.to_path_buf())
-            {
-                Some(parent) => parent == abs_resolved_path,
-                _ => false,
-            };
+            let match_parent = absolute_import_path.parent() == Some(abs_resolved_path);
 
             match_exact || match_parent
         });

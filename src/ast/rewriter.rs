@@ -72,8 +72,9 @@ impl WhitelabelRewriter {
             && let Some(abs_resolved_path) = self
                 .resolver
                 .resolve_import(current_file_name.to_string().into(), import_src)
-            && let Some(whitelabel_import_path) =
-                env::with_config(|cfg| cname(cfg.cwd.join(&cfg.src).join(&cfg.output_dir)))
+            && let Some(whitelabel_import_path) = env::with_config(|cfg| {
+                cname(cfg.cwd.join(&cfg.src).join(&cfg.output_dir).as_path())
+            })
         {
             if abs_resolved_path == whitelabel_import_path {
                 return Ok(true);
