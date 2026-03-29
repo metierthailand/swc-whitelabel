@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 use serde::Deserialize;
 use std::{collections::HashMap, fs};
 
@@ -13,17 +13,27 @@ pub struct TsConfig {
     pub compiler_options: CompilerOptions,
 }
 
+impl Default for TsConfig {
+    fn default() -> Self {
+        Self {
+            compiler_options: CompilerOptions {
+                paths: HashMap::new(),
+            },
+        }
+    }
+}
+
 // 2. Helper function to read and parse the config
 pub fn load(tsconfig: String) -> Result<TsConfig> {
-    // Read the file to a string
-    let config_str = fs::read_to_string(&tsconfig)
-        .context(format!("Failed to read config file at {}", &tsconfig))?;
-
-    // Deserialize the JSON string into our struct
-    let config: TsConfig = serde_json::from_str(&config_str).context(format!(
-        "Failed to parse {}. Is the JSON strictly valid?",
-        &tsconfig
-    ))?;
+    let config: TsConfig = {
+        if let Ok(config_str) = fs::read_to_string(&tsconfig)
+            && let Ok(cfg) = serde_json::from_str(&config_str)
+        {
+            cfg
+        } else {
+            Default::default()
+        }
+    };
 
     Ok(config)
 }

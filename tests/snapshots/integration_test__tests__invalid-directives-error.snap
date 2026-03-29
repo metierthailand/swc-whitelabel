@@ -1,0 +1,6 @@
+---
+source: tests/integration_test.rs
+expression: e
+---
+- "[wildcards-with-for.ts] Parsing error: Some(User { error: ForOrWildcardConflict })"
+- "[wildcards-with-optional.ts] Parsing error: Some(User { error: WildcardOrOptionalConflict })"

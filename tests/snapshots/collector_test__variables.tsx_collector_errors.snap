@@ -1,5 +1,0 @@
----
-source: tests/collector_test.rs
-expression: e.to_string()
----
-"- \"Parsing error: Some(User { error: ForOrWildcardConflict })\""

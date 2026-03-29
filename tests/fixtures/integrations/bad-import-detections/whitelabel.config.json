@@ -1,0 +1,7 @@
+{
+  "src": "src/",
+  "patterns": ["**/*.ts", "**/*.tsx"],
+  "output_dir": "whitelabel",
+  "default_target": "def",
+  "tsconfig": "tsconfig.json"
+}

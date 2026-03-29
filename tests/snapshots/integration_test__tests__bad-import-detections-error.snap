@@ -1,0 +1,5 @@
+---
+source: tests/integration_test.rs
+expression: e
+---
+- [Rewriter] refused to proceed, found a name whitelabel but difference import @./src/index.tsx

@@ -112,7 +112,7 @@ pub fn generate(registry: &WhitelabelRegistry) -> String {
     targets.sort();
 
     let mut unions = String::from("export type Variants =");
-    for target in targets.clone() {
+    for target in &targets {
         unions.push_str(&format!(
             r#"
         |"{}"
@@ -132,9 +132,7 @@ pub fn generate(registry: &WhitelabelRegistry) -> String {
               return new VariantConfig();
             }}
             "#,
-            // "  {}: require('./{}.generated').default,\n",
-            target,
-            target
+            target, target
         ));
     }
     index_content.push_str(&configs);

@@ -1,0 +1,335 @@
+---
+source: tests/integration_test.rs
+expression: final_output
+---
+--- .gitignore ---
+node_modules
+
+# Output
+.output
+.vercel
+.netlify
+.wrangler
+/.svelte-kit
+/build
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.*
+!.env.example
+!.env.test
+
+# Vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+
+--- .vscode/extensions.json ---
+{
+	"recommendations": ["svelte.svelte-vscode"]
+}
+
+
+--- mise.toml ---
+[tools]
+node = "latest"
+
+
+--- package.json ---
+{
+  "name": "svelte-example",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "prepare": "svelte-kit sync || echo ''",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
+  },
+  "devDependencies": {
+    "@originjs/vite-plugin-commonjs": "^1.0.3",
+    "@sveltejs/adapter-auto": "^7.0.0",
+    "@sveltejs/kit": "^2.50.2",
+    "@sveltejs/vite-plugin-svelte": "^6.2.4",
+    "svelte": "^5.54.0",
+    "svelte-check": "^4.4.2",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1"
+  }
+}
+
+
+--- src/app.d.ts ---
+// See https://svelte.dev/docs/kit/types#app.d.ts
+// for information about these interfaces
+declare global {
+  namespace App {
+    // interface Error {}
+    // interface Locals {}
+    // interface PageData {}
+    // interface PageState {}
+    // interface Platform {}
+  }
+}
+
+export {};
+
+
+--- src/app.html ---
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		%sveltekit.head%
+	</head>
+	<body data-sveltekit-preload-data="hover">
+		<div style="display: contents">%sveltekit.body%</div>
+	</body>
+</html>
+
+
+--- src/lib/content.ts ---
+// whitelabel for def
+export const TITLE = "abcd";
+
+
+--- src/lib/index.ts ---
+import whitelabel from "./whitelabel";
+import { TITLE as _TITLE } from "$lib/content";
+import { count as _count, onclick as _onclick } from "store";
+export const count = _count;
+export const onclick = whitelabel.onclick;
+export const TITLE = whitelabel.TITLE;
+
+
+--- src/lib/store.ts ---
+import { writable } from "svelte/store";
+
+export const count = writable(0);
+
+// whitelabel *
+export function onclick() {
+  count.update((c) => c + 1);
+}
+
+
+--- src/lib/whitelabel/def.generated.tsx ---
+/* eslint-disable @typescript-eslint/no-require-imports */
+
+// AUTO-GENERATED: DO NOT EDIT
+
+import type { WhitelabelConfig } from "./whitelabel";
+export class whitelabel implements WhitelabelConfig {
+  public get TITLE(): WhitelabelConfig["TITLE"] {
+    return require("../content").TITLE;
+  }
+  public get onclick(): WhitelabelConfig["onclick"] {
+    return require("../store").onclick;
+  }
+}
+
+export default whitelabel;
+
+
+--- src/lib/whitelabel/index.ts ---
+/**
+ * 🎨 WHITELABEL RESOLUTION ENTRY POINT
+ * * Unlike the `*.generated.tsx` files in this directory, this file is YOURS to edit!
+ * `wl-extractor` generated this as a starter template. You should customize the
+ * logic here to match how your application determines the current tenant/brand.
+ * * By default, this uses a static, build-time environment variable.
+ */
+
+import { type Variants, Whitelabel, type WhitelabelConfig } from "./whitelabel";
+
+// --- Default Strategy: Build-time Environment Variable ---
+const currentWhitelabel = (() => {
+  // Fallback to 'def' (or your project's default) if the env var is missing
+  const variant = (process.env.NEXT_PUBLIC_WHITELABEL as Variants) || "def";
+  return new Whitelabel()[variant];
+})();
+
+// ! The default export MUST satisfy the `WhitelabelConfig` interface.
+// This ensures that wherever you `import whitelabel from '...'`, it is strictly typed.
+export default currentWhitelabel satisfies WhitelabelConfig;
+
+export { type Variants, type WhitelabelConfig };
+
+/* * ============================================================================
+ * 💡 IDEAS FOR ADVANCED CUSTOM LOGIC
+ * ============================================================================
+ * * 1. React Context & Hooks (Client-Side Dynamic)
+ * ----------------------------------------------------------------------------
+ * If your app switches brands dynamically in the browser (e.g., a dropdown),
+ * export a hook to access the current config:
+ * * export const useWhitelabel = (): WhitelabelConfig => {
+ * // e.g., Read from Redux, Zustand, or React Context
+ * const currentTenant = useTenantStore((state) => state.tenant);
+ * return new Whitelabel()[currentTenant as Variants];
+ * };
+ * * * 2. Next.js App Router / SSR (Per-Request Whitelabeling)
+ * ----------------------------------------------------------------------------
+ * If you are hosting multiple tenants on a single Node server, `process.env`
+ * won't work. Instead, resolve the brand based on the request headers or URL:
+ * * import { headers } from 'next/headers';
+ * * export const getServerWhitelabel = (): WhitelabelConfig => {
+ * const host = headers().get('host');
+ * const variant = host?.includes('brand-a') ? 'brandA' : 'def';
+ * return new Whitelabel()[variant as Variants];
+ * };
+ * ============================================================================
+ */
+
+
+--- src/lib/whitelabel/v2.generated.tsx ---
+/* eslint-disable @typescript-eslint/no-require-imports */
+
+// AUTO-GENERATED: DO NOT EDIT
+
+import type { WhitelabelConfig } from "./whitelabel";
+export class whitelabel implements WhitelabelConfig {
+  public get TITLE(): WhitelabelConfig["TITLE"] {
+    return require("../wl.v2").TITLE;
+  }
+  public get onclick(): WhitelabelConfig["onclick"] {
+    return require("../store").onclick;
+  }
+}
+
+export default whitelabel;
+
+
+--- src/lib/whitelabel/whitelabel.ts ---
+/* eslint-disable @typescript-eslint/no-require-imports */
+// AUTO-GENERATED: DO NOT EDIT
+import type { TITLE as def_3b2a3a4bb6350010 } from "../content";
+import type { TITLE as v2_403fb6cbaa1139a0 } from "../wl.v2";
+import type { onclick as def_37aa266ee8d94f99 } from "../store";
+import type { onclick as v2_37aa266ee8d94f99 } from "../store";
+export interface WhitelabelConfig {
+  /**
+   * ### 🏷️ Available for: {@link def_3b2a3a4bb6350010 | `def`} | {@link v2_403fb6cbaa1139a0 | `v2`}
+   * @copyright **def**
+   * @default
+   * ```tsx
+   * "abcd"
+   * ```
+   */
+  TITLE: typeof def_3b2a3a4bb6350010 | typeof v2_403fb6cbaa1139a0;
+  /**
+   * ### 🏷️ Available for: {@link def_37aa266ee8d94f99 | `def`} | {@link v2_37aa266ee8d94f99 | `v2`}
+   * @copyright **def**
+   * @default
+   * ```tsx
+   * function onclick() {
+   *   count.update((c) => c + 1);
+   * }
+   * ```
+   */
+  onclick: typeof def_37aa266ee8d94f99 | typeof v2_37aa266ee8d94f99;
+}
+export type Variants = "def" | "v2";
+
+export class Whitelabel implements Record<Variants, WhitelabelConfig> {
+  public get def(): WhitelabelConfig {
+    const VariantConfig = require("./def.generated").default;
+    return new VariantConfig();
+  }
+  public get v2(): WhitelabelConfig {
+    const VariantConfig = require("./v2.generated").default;
+    return new VariantConfig();
+  }
+}
+
+
+--- src/lib/wl.v2.ts ---
+// whitelabel for v2
+export const TITLE = "This is V2";
+
+
+--- src/routes/+page.svelte ---
+<script>
+  import { TITLE, count, onclick } from "$lib";
+</script>
+
+<h1>{TITLE}</h1>
+<button {onclick}>Simple Counter: {$count}</button>
+
+
+--- svelte.config.js ---
+import adapter from '@sveltejs/adapter-auto';
+import { relative, sep } from 'node:path';
+
+/** @type {import('@sveltejs/kit').Config} */
+const config = {
+	compilerOptions: {
+		// defaults to rune mode for the project, execept for `node_modules`. Can be removed in svelte 6.
+		runes: ({ filename }) => {
+			const relativePath = relative(import.meta.dirname, filename);
+			const pathSegments = relativePath.toLowerCase().split(sep);
+			const isExternalLibrary = pathSegments.includes('node_modules');
+
+			return isExternalLibrary ? undefined : true;
+		}
+	},
+	kit: {
+		// adapter-auto only supports some environments, see https://svelte.dev/docs/kit/adapter-auto for a list.
+		// If your environment is not supported, or you settled on a specific environment, switch out the adapter.
+		// See https://svelte.dev/docs/kit/adapters for more information about adapters.
+		adapter: adapter()
+	}
+};
+
+export default config;
+
+
+--- tsconfig.json ---
+{
+  "extends": "./.svelte-kit/tsconfig.json",
+  "compilerOptions": {
+    "rewriteRelativeImportExtensions": true,
+    "allowJs": true,
+    "checkJs": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "strict": true,
+    "moduleResolution": "bundler",
+    "paths": {
+      "lib/*": ["./src/lib/*"],
+      "$lib": ["./src/lib/"],
+      "$lib/*": ["./src/lib/*"],
+      "store": ["./src/lib/store.ts"]
+    }
+  }
+}
+
+
+--- vite.config.ts ---
+import { viteCommonjs } from "@originjs/vite-plugin-commonjs";
+import { sveltekit } from "@sveltejs/kit/vite";
+import { defineConfig } from "vite";
+
+export default defineConfig({
+  plugins: [sveltekit(), viteCommonjs()],
+});
+
+
+--- whitelabel.config.json ---
+{
+  "src": "src/lib/",
+  "patterns": ["**/*.ts"],
+  "output_dir": "whitelabel",
+  "default_target": "def",
+  "tsconfig": "tsconfig.json"
+}

@@ -7,7 +7,7 @@ edition = "2024"
 swc_core = { version = "58.0.*", features = ["common", "ecma_ast", "ecma_parser", "ecma_visit", "common_tty", "ecma_codegen", "__ecma", "swc_ecma_ast", "ecma_plugin_transform"] }
 glob = "0.3.1"
 anyhow = "1.0"
-serde = "1.0.220" # Pin strictly to the last working version
+serde = "1.0.220"
 serde_json = "1.0.149"
 swc_ecma_utils = "27.0.0"
 pathdiff = "0.2.3"
@@ -18,13 +18,11 @@ testing = "20.0.0"
 insta = {version = "1.46.3", features = ["yaml", "redactions"] }
 tempfile = "3.27.0"
 walkdir = "2.5.0"
-# 1. Strictly pin the crates you are using
+# Strictly pin biome crates
 biome_js_parser = "=0.5.7"
 biome_js_syntax = "=0.5.7"
 biome_js_formatter = "=0.5.7"
 biome_formatter = "=0.5.7"
-
-# 2. Forcefully pin the failing internal/transitive crates to the same version
 biome_rowan = "=0.5.7"
 biome_json_syntax = "=0.5.7"
 biome_console = "=0.5.7"
