@@ -54,9 +54,7 @@ pub fn to_rel_import(current_dir: &Path, import_path: &str) -> PathBuf {
 }
 
 pub fn cname(input: PathBuf) -> Option<PathBuf> {
-    let Some(file_name) = input.file_name() else {
-        return None;
-    };
+    let file_name = input.file_name()?;
     let clean_dir = input.parent().and_then(|dir| dir.canonicalize().ok());
 
     clean_dir.map(|mut p| {

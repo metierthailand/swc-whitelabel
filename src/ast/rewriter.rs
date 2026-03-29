@@ -103,7 +103,7 @@ impl WhitelabelRewriter {
                     Ok(false) => Some(prev),
                     Err(e) => {
                         self.errors.push(anyhow!(e));
-                        return None;
+                        None
                     }
                 }
             } else {
