@@ -72,7 +72,8 @@ pub fn exec(cm: &Lrc<SourceMap>, registry: &WhitelabelRegistry) -> Result<Vec<St
             continue;
         }
 
-        let mut rewriter = WhitelabelRewriter::new(cm.clone(), target_ids, false);
+        let mut rewriter =
+            WhitelabelRewriter::new(cm.clone(), target_ids, false, &import_path_resolver);
         program.visit_mut_with(&mut rewriter);
 
         if rewriter.into_result()? {

@@ -99,10 +99,7 @@ impl<'a> Visit for SymbolScanner<'a> {
                     None => named.local.sym.to_string(),
                 };
 
-                if let Some(entry) = self
-                    .registry
-                    .lookup(&imported_name, &resolved_path.with_extension(""))
-                {
+                if let Some(entry) = self.registry.lookup(&imported_name, &resolved_path) {
                     {
                         report(|| {
                             if let Some(file_name) = self.current_file_name.as_ref() {
@@ -123,9 +120,7 @@ impl<'a> Visit for SymbolScanner<'a> {
             && let Some(current_file_name) = &self.current_file_name
             && let Some(resolved_current_file_name) =
                 cname(PathBuf::from(&current_file_name.to_string()))
-            && let Some(entry) = self
-                .registry
-                .lookup(&name, &resolved_current_file_name.with_extension(""))
+            && let Some(entry) = self.registry.lookup(&name, &resolved_current_file_name)
         {
             report(|| {
                 if let Some(file_name) = self.current_file_name.as_ref() {

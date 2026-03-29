@@ -5,6 +5,7 @@ use std::path::PathBuf;
 use crate::config::env;
 use crate::util::cname;
 
+#[derive(Clone, Debug)]
 pub struct TsImportPathResolver {
     pub path_mapping: HashMap<String, String>,
 }

@@ -77,8 +77,6 @@ impl WhitelabelRegistry {
                 .collect::<Vec<_>>()
         })?;
 
-        let strip_ext_abs_resolved_path = abs_resolved_path.with_extension("");
-
         let import_match = entries.iter().find(|entry| {
             let WhitelabelSymbol::Symbol {
                 symbol: _,
@@ -88,19 +86,19 @@ impl WhitelabelRegistry {
                 return false;
             };
 
-            let Some(absolute_import_path) = env::with_config(|cfg| {
-                cname(cfg.cwd.join(&cfg.src).join(import_path).with_extension(""))
-            }) else {
+            let Some(absolute_import_path) =
+                env::with_config(|cfg| cname(cfg.cwd.join(&cfg.src).join(import_path)))
+            else {
                 return false;
             };
 
-            let match_exact = absolute_import_path == strip_ext_abs_resolved_path;
+            let match_exact = absolute_import_path == abs_resolved_path;
 
             let match_parent = match absolute_import_path
                 .parent()
                 .map(|parent| parent.to_path_buf())
             {
-                Some(parent) => parent == strip_ext_abs_resolved_path,
+                Some(parent) => parent == abs_resolved_path,
                 _ => false,
             };
 

@@ -1,6 +1,7 @@
-use anyhow::{Error, anyhow};
+use anyhow::{Error, Result, anyhow};
 use std::collections::HashMap;
 use std::path::PathBuf;
+use swc_core::common::Spanned;
 use swc_core::common::{DUMMY_SP, SourceMap, sync::Lrc};
 use swc_core::ecma::{
     ast::*,
@@ -9,17 +10,19 @@ use swc_core::ecma::{
 
 use crate::common::errorable::Errorable;
 use crate::config::env;
-use crate::util::{self};
+use crate::util::resolver::TsImportPathResolver;
+use crate::util::{self, cname};
 
 pub struct WhitelabelRewriter {
     pub source_map: Lrc<SourceMap>,
     pub target_ids: HashMap<Id, String>,
     pub has_modified: bool,
+    resolver: TsImportPathResolver,
     jsx_stack: Vec<JSXElementName>,
     errors: Vec<Error>,
 }
 
-const KEYWORD: &[u8] = b"whitelabel";
+const KEYWORD: &str = "whitelabel";
 
 impl Errorable<bool> for WhitelabelRewriter {
     fn into_result(self) -> anyhow::Result<bool> {
@@ -35,16 +38,57 @@ impl WhitelabelRewriter {
         source_map: Lrc<SourceMap>,
         target_ids: HashMap<Id, String>,
         has_modified: bool,
+        resolver: &TsImportPathResolver,
     ) -> Self {
         Self {
             source_map,
             target_ids,
             has_modified,
+            resolver: resolver.clone(),
             jsx_stack: vec![],
             errors: vec![],
         }
     }
-    fn find_insert_idx(&self, module: &Module) -> Option<usize> {
+
+    fn is_already_imported(&self, i: &ImportDecl) -> Result<bool> {
+        let name_matched = i.specifiers.iter().any(|s| match s {
+            ImportSpecifier::Named(import_named_specifier) => {
+                import_named_specifier.local.sym.eq(KEYWORD)
+            }
+            ImportSpecifier::Default(import_default_specifier) => {
+                import_default_specifier.local.sym.eq(KEYWORD)
+            }
+            _ => false,
+        });
+        let current_file_name = self
+            .source_map
+            .lookup_char_pos(i.span_lo())
+            .file
+            .name
+            .clone();
+
+        if name_matched
+            && let Some(import_src) = i.src.value.as_str()
+            && let Some(abs_resolved_path) = self
+                .resolver
+                .resolve_import(current_file_name.to_string().into(), import_src)
+            && let Some(whitelabel_import_path) =
+                env::with_config(|cfg| cname(cfg.cwd.join(&cfg.src).join(&cfg.output_dir)))
+        {
+            return if abs_resolved_path == whitelabel_import_path {
+                Ok(true)
+            } else {
+                Err(anyhow!(
+                    "[Rewriter] refused to proceed, found a name {} but difference import @{}",
+                    KEYWORD,
+                    current_file_name
+                ))
+            };
+        }
+        Ok(false)
+    }
+
+    fn find_insert_idx(&mut self, module: &Module) -> Option<usize> {
         module.body.iter().try_fold(0, |prev, item| {
             if let ModuleItem::Stmt(Stmt::Expr(expr_stmt)) = item
                 && let Expr::Lit(Lit::Str(s)) = &*expr_stmt.expr
@@ -53,13 +97,15 @@ impl WhitelabelRewriter {
                 Some(prev + 1)
             } else if let ModuleItem::ModuleDecl(import) = item
                 && let ModuleDecl::Import(i) = import
-                && i.src
-                    .value
-                    .as_bytes()
-                    .windows(KEYWORD.len())
-                    .any(|window| window == KEYWORD)
             {
-                None
+                match self.is_already_imported(i) {
+                    Ok(true) => None,
+                    Ok(false) => Some(prev),
+                    Err(e) => {
+                        self.errors.push(anyhow!(e));
+                        return None;
+                    }
+                }
             } else {
                 Some(prev)
             }

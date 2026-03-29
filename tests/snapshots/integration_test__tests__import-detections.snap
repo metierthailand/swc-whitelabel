@@ -1,0 +1,148 @@
+---
+source: tests/integration_test.rs
+expression: final_output
+---
+--- src/index.tsx ---
+import whitelabel from "./whitelabel";
+import { withFeatureFlags } from "./whitelabel";
+// whitelabel
+export const replacable_title = "TITLE";
+console.log(whitelabel.replacable_title);
+// whitelabel
+export const flag_is_enable = true;
+export default withFeatureFlags(
+  () => <h1>Something</h1>,
+  (wl) => wl.flag_is_enable,
+);
+
+
+--- src/whitelabel/def.generated.tsx ---
+/* eslint-disable @typescript-eslint/no-require-imports */
+
+// AUTO-GENERATED: DO NOT EDIT
+
+import type { WhitelabelConfig } from "./whitelabel";
+export class whitelabel implements WhitelabelConfig {
+  public get flag_is_enable(): WhitelabelConfig["flag_is_enable"] {
+    return require("../index").flag_is_enable;
+  }
+  public get replacable_title(): WhitelabelConfig["replacable_title"] {
+    return require("../index").replacable_title;
+  }
+}
+
+export default whitelabel;
+
+
+--- src/whitelabel/index.ts ---
+/**
+ * 🎨 WHITELABEL RESOLUTION ENTRY POINT
+ * * Unlike the `*.generated.tsx` files in this directory, this file is YOURS to edit!
+ * `wl-extractor` generated this as a starter template. You should customize the
+ * logic here to match how your application determines the current tenant/brand.
+ * * By default, this uses a static, build-time environment variable.
+ */
+
+import { type Variants, Whitelabel, type WhitelabelConfig } from "./whitelabel";
+import { withFeatureFlags } from "./with-feature-flags";
+
+// --- Default Strategy: Build-time Environment Variable ---
+const currentWhitelabel = (() => {
+  const variant = "def";
+  return new Whitelabel()[variant];
+})();
+
+// ! The default export MUST satisfy the `WhitelabelConfig` interface.
+// This ensures that wherever you `import whitelabel from '...'`, it is strictly typed.
+export default currentWhitelabel satisfies WhitelabelConfig;
+
+export { type Variants, type WhitelabelConfig, withFeatureFlags };
+
+/* * ============================================================================
+ * 💡 IDEAS FOR ADVANCED CUSTOM LOGIC
+ * ============================================================================
+ * * 1. React Context & Hooks (Client-Side Dynamic)
+ * ----------------------------------------------------------------------------
+ * If your app switches brands dynamically in the browser (e.g., a dropdown),
+ * export a hook to access the current config:
+ * * export const useWhitelabel = (): WhitelabelConfig => {
+ * // e.g., Read from Redux, Zustand, or React Context
+ * const currentTenant = useTenantStore((state) => state.tenant);
+ * return new Whitelabel()[currentTenant as Variants];
+ * };
+ * * * 2. Next.js App Router / SSR (Per-Request Whitelabeling)
+ * ----------------------------------------------------------------------------
+ * If you are hosting multiple tenants on a single Node server, `process.env`
+ * won't work. Instead, resolve the brand based on the request headers or URL:
+ * * import { headers } from 'next/headers';
+ * * export const getServerWhitelabel = (): WhitelabelConfig => {
+ * const host = headers().get('host');
+ * const variant = host?.includes('brand-a') ? 'brandA' : 'def';
+ * return new Whitelabel()[variant as Variants];
+ * };
+ * ============================================================================
+ */
+
+
+--- src/whitelabel/whitelabel.ts ---
+/* eslint-disable @typescript-eslint/no-require-imports */
+// AUTO-GENERATED: DO NOT EDIT
+import type { flag_is_enable as def_2389ebae0dd1c5f4 } from "../index";
+import type { replacable_title as def_357cc1bc8ffeb783 } from "../index";
+export interface WhitelabelConfig {
+  /**
+   * ### 🏷️ Available for: {@link def_2389ebae0dd1c5f4 | `def`}
+   * @copyright **def**
+   * @default
+   * ```tsx
+   * true
+   * ```
+   */
+  flag_is_enable: typeof def_2389ebae0dd1c5f4;
+  /**
+   * ### 🏷️ Available for: {@link def_357cc1bc8ffeb783 | `def`}
+   * @copyright **def**
+   * @default
+   * ```tsx
+   * "TITLE"
+   * ```
+   */
+  replacable_title: typeof def_357cc1bc8ffeb783;
+}
+export type Variants = "def";
+
+export class Whitelabel implements Record<Variants, WhitelabelConfig> {
+  public get def(): WhitelabelConfig {
+    const VariantConfig = require("./def.generated").default;
+    return new VariantConfig();
+  }
+}
+
+
+--- src/whitelabel/with-feature-flags.ts ---
+import whitelabel, { type WhitelabelConfig } from ".";
+
+export const withFeatureFlags = <TArgs, TReturnType>(Fn: (args: TArgs) => TReturnType, pred: (config: WhitelabelConfig) => boolean) => {
+  return function WithFeatureFlags(props: TArgs): TReturnType | null {
+    return pred(whitelabel) ? Fn(props) : null;
+  };
+};
+
+
+--- tsconfig.json ---
+{
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "paths": {}
+  }
+}
+
+
+--- whitelabel.config.json ---
+{
+  "src": "src/",
+  "patterns": ["**/*.ts", "**/*.tsx"],
+  "output_dir": "whitelabel",
+  "default_target": "def",
+  "tsconfig": "tsconfig.json"
+}
