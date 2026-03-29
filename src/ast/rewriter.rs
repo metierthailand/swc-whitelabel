@@ -75,23 +75,25 @@ impl WhitelabelRewriter {
             && let Some(whitelabel_import_path) =
                 env::with_config(|cfg| cname(cfg.cwd.join(&cfg.src).join(&cfg.output_dir)))
         {
-            return if abs_resolved_path == whitelabel_import_path {
-                Ok(true)
-            } else {
-                let rel_path = env::with_config(|cfg| {
-                    util::compute_relative_import(
-                        cfg.cwd.clone().as_path(),
-                        PathBuf::from(&current_file_name.to_string()).as_path(),
-                    )
-                    .unwrap_or(current_file_name.to_string())
-                });
-                Err(anyhow!(
-                    "[Rewriter] refused to proceed, found a name {} but difference import @{}",
-                    KEYWORD,
-                    rel_path
-                ))
-            };
+            if abs_resolved_path == whitelabel_import_path {
+                return Ok(true);
+            }
+
+            let rel_path = env::with_config(|cfg| {
+                util::compute_relative_import(
+                    cfg.cwd.clone().as_path(),
+                    PathBuf::from(&current_file_name.to_string()).as_path(),
+                )
+                .unwrap_or(current_file_name.to_string())
+            });
+
+            return Err(anyhow!(
+                "[Rewriter] refused to proceed, found a name {} but difference import @{}",
+                KEYWORD,
+                rel_path
+            ));
         }
+
         Ok(false)
     }
 
@@ -101,21 +103,21 @@ impl WhitelabelRewriter {
                 && let Expr::Lit(Lit::Str(s)) = &*expr_stmt.expr
                 && s.value.starts_with("use ")
             {
-                Some(prev + 1)
+                return Some(prev + 1);
             } else if let ModuleItem::ModuleDecl(import) = item
                 && let ModuleDecl::Import(i) = import
             {
-                match self.is_already_imported(i) {
+                return match self.is_already_imported(i) {
                     Ok(true) => None,
                     Ok(false) => Some(prev),
                     Err(e) => {
                         self.errors.push(anyhow!(e));
                         None
                     }
-                }
-            } else {
-                Some(prev)
+                };
             }
+
+            Some(prev)
         })
     }
 }
