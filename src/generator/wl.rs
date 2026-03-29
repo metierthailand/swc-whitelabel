@@ -23,19 +23,6 @@ import type { WhitelabelConfig } from './whitelabel';"#,
     output.push_str("\nexport class whitelabel implements WhitelabelConfig {\n");
     for entry in sorted {
         let getter = match &entry.symbol {
-            WhitelabelSymbol::Symbol {
-                symbol,
-                import_path,
-            } => format!(
-                r#"public get {}(): WhitelabelConfig['{}'] {{
-                    return require('{}').{}
-                  }}
-              "#,
-                entry.key,
-                entry.key,
-                to_rel_import(&current_dir, import_path).to_string_lossy(),
-                symbol
-            ),
             WhitelabelSymbol::Undefined => format!(
                 r#"public get {}(): undefined {{
                     return undefined
@@ -43,6 +30,20 @@ import type { WhitelabelConfig } from './whitelabel';"#,
               "#,
                 entry.key,
             ),
+            defined => {
+                let Some((symbol, import_path)) = defined.get_root_symbol() else {
+                    return "".into();
+                };
+                format!(
+                    r#"public get {}(): WhitelabelConfig['{}'] {{
+                        return require('{}').{}
+                      }}"#,
+                    entry.key,
+                    entry.key,
+                    to_rel_import(&current_dir, import_path).to_string_lossy(),
+                    symbol
+                )
+            }
         };
         output.push_str(&getter);
     }

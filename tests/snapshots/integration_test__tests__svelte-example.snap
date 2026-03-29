@@ -213,7 +213,6 @@ export default whitelabel;
 import type { TITLE as def_3b2a3a4bb6350010 } from "../content";
 import type { TITLE as v2_403fb6cbaa1139a0 } from "../wl.v2";
 import type { onclick as def_37aa266ee8d94f99 } from "../store";
-import type { onclick as v2_37aa266ee8d94f99 } from "../store";
 export interface WhitelabelConfig {
   /**
    * ### 🏷️ Available for: {@link def_3b2a3a4bb6350010 | `def`} | {@link v2_403fb6cbaa1139a0 | `v2`}
@@ -225,7 +224,7 @@ export interface WhitelabelConfig {
    */
   TITLE: typeof def_3b2a3a4bb6350010 | typeof v2_403fb6cbaa1139a0;
   /**
-   * ### 🏷️ Available for: {@link def_37aa266ee8d94f99 | `def`} | {@link v2_37aa266ee8d94f99 | `v2`}
+   * ### 🏷️ Available for: {@link def_37aa266ee8d94f99 | `def`} | `v2` = {@link def_37aa266ee8d94f99 | def}
    * @copyright **def**
    * @default
    * ```tsx
@@ -234,7 +233,7 @@ export interface WhitelabelConfig {
    * }
    * ```
    */
-  onclick: typeof def_37aa266ee8d94f99 | typeof v2_37aa266ee8d94f99;
+  onclick: typeof def_37aa266ee8d94f99;
 }
 export type Variants = "def" | "v2";
 

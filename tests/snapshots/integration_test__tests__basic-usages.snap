@@ -1,6 +1,6 @@
 ---
 source: tests/integration_test.rs
-expression: idempt_output
+expression: final_output
 ---
 --- app/home/_components/heading.tsx ---
 import { FC } from "react";
@@ -199,9 +199,6 @@ import type { variant3_bgClassname as variant3_fa79c0168dc71b7 } from "../home/p
 import type { variant4_bgClassname as variant4_ff373c3ac713a727 } from "../home/page";
 import type { Heading as def_cce35f3890d1b666 } from "../home/_components/heading";
 import type { Heading as variant1_35f9b289efdadf9f } from "../variant1.const";
-import type { Heading as variant2_cce35f3890d1b666 } from "../home/_components/heading";
-import type { Heading as variant3_cce35f3890d1b666 } from "../home/_components/heading";
-import type { Heading as variant4_cce35f3890d1b666 } from "../home/_components/heading";
 export interface WhitelabelConfig {
   /**
    * ### 🏷️ Available for: {@link def_f5ddee806ca95ade | `def`} | {@link variant1_93de170be0ce975c | `variant1`} | {@link variant2_d84b71ffdf9f5fcd | `variant2`} | {@link variant3_fa79c0168dc71b7 | `variant3`} | {@link variant4_ff373c3ac713a727 | `variant4`}
@@ -213,14 +210,14 @@ export interface WhitelabelConfig {
    */
   BG_COLOR: typeof def_f5ddee806ca95ade | typeof variant1_93de170be0ce975c | typeof variant2_d84b71ffdf9f5fcd | typeof variant3_fa79c0168dc71b7 | typeof variant4_ff373c3ac713a727;
   /**
-   * ### 🏷️ Available for: {@link def_cce35f3890d1b666 | `def`} | {@link variant1_35f9b289efdadf9f | `variant1`} | {@link variant2_cce35f3890d1b666 | `variant2`} | {@link variant3_cce35f3890d1b666 | `variant3`} | {@link variant4_cce35f3890d1b666 | `variant4`}
+   * ### 🏷️ Available for: {@link def_cce35f3890d1b666 | `def`} | {@link variant1_35f9b289efdadf9f | `variant1`} | `variant2` = {@link def_cce35f3890d1b666 | def} | `variant3` = {@link def_cce35f3890d1b666 | def} | `variant4` = {@link def_cce35f3890d1b666 | def}
    * @copyright **def**
    * @default
    * ```tsx
    * () => <h1>Heading</h1>
    * ```
    */
-  Heading: typeof def_cce35f3890d1b666 | typeof variant1_35f9b289efdadf9f | typeof variant2_cce35f3890d1b666 | typeof variant3_cce35f3890d1b666 | typeof variant4_cce35f3890d1b666;
+  Heading: typeof def_cce35f3890d1b666 | typeof variant1_35f9b289efdadf9f;
 }
 export type Variants = "def" | "variant1" | "variant2" | "variant3" | "variant4";
 
