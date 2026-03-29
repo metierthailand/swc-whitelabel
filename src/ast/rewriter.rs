@@ -78,10 +78,17 @@ impl WhitelabelRewriter {
             return if abs_resolved_path == whitelabel_import_path {
                 Ok(true)
             } else {
+                let rel_path = env::with_config(|cfg| {
+                    util::compute_relative_import(
+                        cfg.cwd.clone().as_path(),
+                        PathBuf::from(&current_file_name.to_string()).as_path(),
+                    )
+                    .unwrap_or(current_file_name.to_string())
+                });
                 Err(anyhow!(
                     "[Rewriter] refused to proceed, found a name {} but difference import @{}",
                     KEYWORD,
-                    current_file_name
+                    rel_path
                 ))
             };
         }
