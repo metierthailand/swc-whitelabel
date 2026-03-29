@@ -12,7 +12,7 @@ We design this tool under the assumption that developers will be disciplined wit
 
 We ruthlessly prioritize our backlog based on **Blast Radius and Risk Mitigation**. If you want to contribute but aren't sure where to start, check out the milestones below! We are actively targeting **P0** and **P1** issues.
 
-### 🚨 P0: The "Do No Harm" Release (Fixing Corruption, Crashes & Compliance)
+### ✅ ~~P0: The "Do No Harm" Release (Fixing Corruption, Crashes & Compliance)~~ 🎉
 **Goal:** Guarantee that running `wl-extractor` will *never* break a working application, and ensure the tool is operationally safe for external teams to adopt.
 
 * [x] **1. Transactional Codemods:** Stage all file writes, ensure the tool fails fast on errors, and implement rollbacks to prevent partial repository migrations.
@@ -20,7 +20,7 @@ We ruthlessly prioritize our backlog based on **Blast Radius and Risk Mitigation
 * [x] **3. Idempotency (Double-writes):** Running the tool twice must yield the exact same file state. 
   * [x] *Action:* Upgrade injection detection to rely on AST and config validation rather than simple string matching.
 * [x] **4. Stop Silent Omissions:** Log warnings for any unresolved imports or parse failures instead of silently skipping files (e.g., dropping the `Err(_) => continue` pattern).
-* [ ] **5. Optional `compilerOptions.paths`:** The tool currently crashes if `paths` is missing in `tsconfig.json`. It must default to an empty map instead of panicking.
+* [x] **5. Optional `compilerOptions.paths`:** The tool currently crashes if `paths` is missing in `tsconfig.json`. It must default to an empty map instead of panicking.
 * [x] **6. Graceful Unresolved Imports:** Unresolved imports should log a warning and be skipped, not crash the binary.
 * [x] **7. JSX Closing Tags (Syntax Corruption):** Rewrite `</BrandAHeader>` to `</whitelabel.HeroHeader>` to preserve React AST integrity.
 

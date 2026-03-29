@@ -102,6 +102,7 @@ mod tests {
 
     // We target the config file as the "anchor" for each test fixture folder
     #[fixture("tests/fixtures/integrations/**/whitelabel.config.json")]
+    #[fixture("tests/fixtures/integrations/missing-configs/test")]
     fn test_whitelabel_extraction(config_path: PathBuf) {
         // 1. Get the root folder of this specific test case (e.g., "01_basic_extraction")
         let fixture_root = config_path.parent().unwrap();

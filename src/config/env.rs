@@ -2,14 +2,28 @@ use anyhow::Result;
 use serde::Deserialize;
 use std::{cell::RefCell, env, fs, path::PathBuf};
 
+fn default_tsconfig() -> String {
+    "tsconfig.json".to_string()
+}
+
+fn default_patterns() -> Vec<String> {
+    vec!["**/*.tsx".to_owned(), "**/*.ts".to_owned()]
+}
+
+fn default_output_dir() -> String {
+    "whitelabel".to_string()
+}
+
 // 1. Define the struct that perfectly mirrors your JSON
 #[derive(Debug, Deserialize, Clone)]
 pub struct WhitelabelConfig {
     pub src: String,
-    pub patterns: Vec<String>,
-    pub output_dir: String,
     pub default_target: String,
-    #[serde(default = "tsconfig")]
+    #[serde(default = "default_patterns")]
+    pub patterns: Vec<String>,
+    #[serde(default = "default_output_dir")]
+    pub output_dir: String,
+    #[serde(default = "default_tsconfig")]
     pub tsconfig: String,
     #[serde(skip)]
     pub output_file_name_only: bool,
@@ -29,10 +43,6 @@ impl Default for WhitelabelConfig {
             cwd: Default::default(),
         }
     }
-}
-
-fn tsconfig() -> String {
-    "tsconfig.json".to_string()
 }
 
 thread_local! {
