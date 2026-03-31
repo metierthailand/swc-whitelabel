@@ -31,7 +31,7 @@ import type { WhitelabelConfig } from './whitelabel';"#,
                 entry.key,
             ),
             defined => {
-                let Some((symbol, import_path)) = defined.get_root_symbol() else {
+                let Some((symbol, import_path, _)) = defined.get_root_symbol() else {
                     return "".into();
                 };
                 format!(

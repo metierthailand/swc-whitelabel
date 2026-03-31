@@ -105,7 +105,7 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
         let entries = collector.into_result()?;
 
         let len = entries.len();
-        let registry: WhitelabelRegistry = entries.try_into()?;
+        let mut registry: WhitelabelRegistry = entries.try_into()?;
 
         report(|| {
             println!("🏗️ Starting whitelabel code generation...",);
@@ -163,7 +163,11 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
         // -----------------------------------------------------------------------------
         // Codemod Pass: Rewrite References Across All Files
         // -----------------------------------------------------------------------------
-        let codemod_modified_files = module::codemod::exec(&cm, &registry)?;
+        let codemod_modified_files = module::codemod::exec(&cm, &mut registry)?;
+
+        let manifest_file = output_dir.join("manifest.json");
+
+        TxFS::with_buffer(|fs| fs.write(&manifest_file, serde_json::to_string_pretty(&registry)?))?;
 
         modified_files.extend(codemod_modified_files);
 

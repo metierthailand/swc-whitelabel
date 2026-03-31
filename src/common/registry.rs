@@ -3,6 +3,7 @@ use std::collections::HashSet;
 use std::path::Path;
 use std::rc::Rc;
 use std::{collections::HashMap, path::PathBuf};
+use swc_core::common::Loc;
 
 use crate::ast::collector::{WhitelabelEntry, WhitelabelTarget};
 use crate::config::env::{self, with_config};
@@ -10,11 +11,36 @@ use crate::util::{cname, report};
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum WhitelabelSymbol {
-    Symbol { symbol: String, import_path: String },
+    Symbol {
+        symbol: String,
+        import_path: String,
+        line: usize,
+    },
     Symlink(Rc<WhitelabelRecord>),
     Undefined,
+}
+
+impl Hash for WhitelabelSymbol {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        match self {
+            WhitelabelSymbol::Symbol {
+                symbol,
+                import_path,
+                ..
+            } => {
+                core::mem::discriminant(self).hash(state);
+                symbol.hash(state);
+                import_path.hash(state);
+            }
+            WhitelabelSymbol::Symlink(whitelabel_record) => {
+                core::mem::discriminant(self).hash(state);
+                whitelabel_record.hash(state);
+            }
+            WhitelabelSymbol::Undefined => core::mem::discriminant(self).hash(state),
+        }
+    }
 }
 
 impl WhitelabelSymbol {
@@ -51,7 +77,7 @@ impl WhitelabelSymbol {
         }
     }
 
-    pub fn get_root_symbol(&self) -> Option<(&String, &String)> {
+    pub fn get_root_symbol(&self) -> Option<(&String, &String, usize)> {
         let mut current = self;
 
         loop {
@@ -64,8 +90,9 @@ impl WhitelabelSymbol {
                 WhitelabelSymbol::Symbol {
                     symbol,
                     import_path,
+                    line,
                 } => {
-                    return Some((symbol, import_path));
+                    return Some((symbol, import_path, *line));
                 }
                 // The chain resolved to nothing
                 WhitelabelSymbol::Undefined => {
@@ -89,8 +116,9 @@ type Key = String;
 
 #[derive(Clone)]
 pub struct WhitelabelRegistry {
-    table: HashMap<Target, HashMap<Key, WhitelabelRecord>>,
-    pivoted: HashMap<Key, HashSet<Target>>,
+    pub(super) table: HashMap<Target, HashMap<Key, WhitelabelRecord>>,
+    pub(super) pivoted: HashMap<Key, HashSet<Target>>,
+    pub(super) usages: HashMap<Key, Vec<Loc>>,
 }
 
 impl WhitelabelRegistry {
@@ -127,11 +155,7 @@ impl WhitelabelRegistry {
         })?;
 
         let import_match = entries.iter().find(|entry| {
-            let WhitelabelSymbol::Symbol {
-                symbol: _,
-                import_path,
-            } = &entry.symbol
-            else {
+            let WhitelabelSymbol::Symbol { import_path, .. } = &entry.symbol else {
                 return false;
             };
 
@@ -152,12 +176,13 @@ impl WhitelabelRegistry {
             Some(e) => match &e.symbol {
                 WhitelabelSymbol::Undefined => None,
                 sb => {
-                    let (symbol, import_path) = sb.get_root_symbol()?;
+                    let (symbol, import_path, line) = sb.get_root_symbol()?;
                     Some(WhitelabelEntry {
                         target: WhitelabelTarget::Targetted(e.target.to_owned()),
                         key: e.key.to_owned(),
                         symbol: symbol.to_owned(),
                         import_path: import_path.to_owned(),
+                        line,
                         _experiment_remark: e.remark.to_owned(),
                         optional: false,
                     })
@@ -165,6 +190,10 @@ impl WhitelabelRegistry {
             },
             None => None,
         }
+    }
+
+    pub fn record(&mut self, key: &str, loc: Loc) {
+        self.usages.entry(key.to_owned()).or_default().push(loc);
     }
 }
 
@@ -224,6 +253,7 @@ impl TryFrom<Vec<WhitelabelEntry>> for WhitelabelRegistry {
                     symbol: WhitelabelSymbol::Symbol {
                         symbol: entry.symbol,
                         import_path: rel_import_path,
+                        line: entry.line,
                     },
                     remark: entry._experiment_remark,
                 });
@@ -269,6 +299,7 @@ impl TryFrom<Vec<WhitelabelEntry>> for WhitelabelRegistry {
                             symbol: WhitelabelSymbol::Symbol {
                                 symbol: entry.symbol.clone(),
                                 import_path: rel_import_path.clone(),
+                                line: entry.line,
                             },
                             key: entry.key.clone(),
                             remark: entry._experiment_remark.clone(),
@@ -319,6 +350,7 @@ impl TryFrom<Vec<WhitelabelEntry>> for WhitelabelRegistry {
                     symbol: WhitelabelSymbol::Symbol {
                         symbol: entry.symbol.clone(),
                         import_path: rel_import_path.clone(),
+                        line: entry.line,
                     },
                     key: entry.key.clone(),
                     remark: entry._experiment_remark.clone(),
@@ -384,6 +416,7 @@ impl TryFrom<Vec<WhitelabelEntry>> for WhitelabelRegistry {
         Ok(WhitelabelRegistry {
             table: grouped_entries,
             pivoted,
+            usages: Default::default(),
         })
     }
 }

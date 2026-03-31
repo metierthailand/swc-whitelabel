@@ -1,12 +1,13 @@
 ---
 source: tests/collector_test.rs
-expression: "collector.entries.iter_mut().map(|e|\n{\n    let to_rel =\n    env::with_config(|cfg|\n    {\n        util::compute_relative_import(cfg.cwd.as_path(),\n        PathBuf::from(&e.import_path).as_path(),)\n    }); e.import_path = to_rel.unwrap(); e\n}).collect::<Vec<&mut WhitelabelEntry>>()"
+expression: "entries.iter_mut().map(|e|\n{\n    let to_rel =\n    env::with_config(|cfg|\n    {\n        util::compute_relative_import(cfg.cwd.as_path(),\n        PathBuf::from(&e.import_path).as_path(),)\n    }); e.import_path = to_rel.unwrap(); e\n}).collect::<Vec<&mut WhitelabelEntry>>()"
 ---
 - target:
     Targetted: def
   key: FN
   symbol: FN
   import_path: "./tests/fixtures/collector/accept_src/functions.tsx"
+  line: 7
   _experiment_remark: "(a: string) => `Hello! ${a}`"
   optional: false
 - target:
@@ -14,6 +15,7 @@ expression: "collector.entries.iter_mut().map(|e|\n{\n    let to_rel =\n    env:
   key: FN2
   symbol: FN2
   import_path: "./tests/fixtures/collector/accept_src/functions.tsx"
+  line: 14
   _experiment_remark: "(a: string) => `Hello! 2 ${a}`"
   optional: false
 - target:
@@ -21,6 +23,7 @@ expression: "collector.entries.iter_mut().map(|e|\n{\n    let to_rel =\n    env:
   key: FN3
   symbol: FN3
   import_path: "./tests/fixtures/collector/accept_src/functions.tsx"
+  line: 21
   _experiment_remark: "(a: string) => `Hello! 3 ${a}`"
   optional: false
 - target:
@@ -28,6 +31,7 @@ expression: "collector.entries.iter_mut().map(|e|\n{\n    let to_rel =\n    env:
   key: FN4
   symbol: FN4
   import_path: "./tests/fixtures/collector/accept_src/functions.tsx"
+  line: 28
   _experiment_remark: "(a: string) => `Hello! 4 ${a}`"
   optional: false
 - target:
@@ -35,6 +39,7 @@ expression: "collector.entries.iter_mut().map(|e|\n{\n    let to_rel =\n    env:
   key: FN
   symbol: BUNNY_FN
   import_path: "./tests/fixtures/collector/accept_src/functions.tsx"
+  line: 35
   _experiment_remark: "(a: string) => `Bunny hello to ${a}!`"
   optional: false
 - target:
@@ -42,5 +47,6 @@ expression: "collector.entries.iter_mut().map(|e|\n{\n    let to_rel =\n    env:
   key: feature_a_FN
   symbol: FN5
   import_path: "./tests/fixtures/collector/accept_src/functions.tsx"
+  line: 42
   _experiment_remark: () => <div><h1>Hey</h1></div>
   optional: false

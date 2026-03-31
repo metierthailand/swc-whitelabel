@@ -90,6 +90,7 @@ pub fn generate(registry: &WhitelabelRegistry) -> String {
                 WhitelabelSymbol::Symbol {
                     symbol,
                     import_path,
+                    ..
                 } => {
                     index_content.push_str(&format!(
                         "import type {{ {} as {}_{:x} }} from '{}';",
