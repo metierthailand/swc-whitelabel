@@ -1,6 +1,6 @@
 use anyhow::Result;
 use serde::Deserialize;
-use std::{cell::RefCell, env, fs, path::PathBuf};
+use std::{cell::RefCell, path::PathBuf};
 
 fn default_tsconfig() -> String {
     "tsconfig.json".to_string()

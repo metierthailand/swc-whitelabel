@@ -36,7 +36,7 @@ impl Serialize for WhitelabelSymbol {
             } => SerializableSymbol::Symbol {
                 symbol: symbol.clone(),
                 import_path: import_path.clone(),
-                line: line.clone(),
+                line: *line,
             },
             WhitelabelSymbol::Symlink(record) => SerializableSymbol::Symlink(record.target.clone()),
             WhitelabelSymbol::Undefined => SerializableSymbol::Undefined,
@@ -119,7 +119,7 @@ impl Serialize for WhitelabelRegistry {
                                 });
                             }
 
-                            return None;
+                            None
                         })
                         .collect::<Vec<_>>()
                 })

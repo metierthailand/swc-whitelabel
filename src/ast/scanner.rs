@@ -135,7 +135,7 @@ impl<'a> Visit for SymbolScanner<'a> {
 
     fn visit_jsx_member_expr(&mut self, jsx_member: &JSXMemberExpr) {
         if let JSXObject::Ident(ident) = &jsx_member.obj
-            && ident.sym.to_string() == "whitelabel"
+            && ident.sym == "whitelabel"
         {
             let bytepos = ident.span.lo;
 
@@ -150,7 +150,7 @@ impl<'a> Visit for SymbolScanner<'a> {
 
     fn visit_member_expr(&mut self, member: &MemberExpr) {
         if let Expr::Ident(obj) = &*member.obj
-            && obj.sym.to_string() == "whitelabel"
+            && obj.sym == "whitelabel"
             && let MemberProp::Ident(prop) = &member.prop
         {
             let bytepos = obj.span.lo;
