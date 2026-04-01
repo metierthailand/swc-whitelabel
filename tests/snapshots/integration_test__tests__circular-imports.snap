@@ -74,31 +74,6 @@ export { type Variants, type WhitelabelConfig };
  */
 
 
---- app/whitelabel/manifest.json ---
-{
-  "foo": {
-    "variants": {
-      "def": {
-        "symbol": {
-          "Symbol": {
-            "symbol": "foo",
-            "import_path": "src.ts",
-            "line": 3
-          }
-        },
-        "inline_impl": "\"foo\""
-      }
-    },
-    "usages": [
-      {
-        "file": "./app/src.ts",
-        "line": 4,
-        "column": 12
-      }
-    ]
-  }
-}
-
 --- app/whitelabel/whitelabel.ts ---
 /* eslint-disable @typescript-eslint/no-require-imports */
 // AUTO-GENERATED: DO NOT EDIT

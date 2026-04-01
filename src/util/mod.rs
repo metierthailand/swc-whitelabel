@@ -13,7 +13,7 @@ where
     })
 }
 
-pub fn create_reporter<F>(pred: F) -> impl Fn(Box<dyn FnOnce()>)
+pub fn runif<F>(pred: F) -> impl Fn(Box<dyn FnOnce()>)
 where
     F: FnOnce(&WhitelabelConfig) -> bool,
 {

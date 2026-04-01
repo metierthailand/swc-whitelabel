@@ -84,46 +84,6 @@ export { type Variants, type WhitelabelConfig, withFeatureFlags };
  */
 
 
---- src/whitelabel/manifest.json ---
-{
-  "flag_is_enable": {
-    "variants": {
-      "def": {
-        "symbol": {
-          "Symbol": {
-            "symbol": "flag_is_enable",
-            "import_path": "index.tsx",
-            "line": 9
-          }
-        },
-        "inline_impl": "true"
-      }
-    },
-    "usages": []
-  },
-  "replacable_title": {
-    "variants": {
-      "def": {
-        "symbol": {
-          "Symbol": {
-            "symbol": "replacable_title",
-            "import_path": "index.tsx",
-            "line": 4
-          }
-        },
-        "inline_impl": "\"TITLE\""
-      }
-    },
-    "usages": [
-      {
-        "file": "./src/index.tsx",
-        "line": 6,
-        "column": 12
-      }
-    ]
-  }
-}
-
 --- src/whitelabel/whitelabel.ts ---
 /* eslint-disable @typescript-eslint/no-require-imports */
 // AUTO-GENERATED: DO NOT EDIT

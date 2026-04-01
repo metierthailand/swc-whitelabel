@@ -1,0 +1,116 @@
+---
+source: tests/integration_test.rs
+expression: manifest_output
+---
+{
+  "BG_COLOR": {
+    "variants": {
+      "def": {
+        "symbol": {
+          "Symbol": {
+            "symbol": "BG_COLOR",
+            "import_path": "home/page.tsx",
+            "line": 13
+          }
+        },
+        "inline_impl": "\"bg-red-200\""
+      },
+      "variant1": {
+        "symbol": {
+          "Symbol": {
+            "symbol": "variant1_bgClassname",
+            "import_path": "home/page.tsx",
+            "line": 7
+          }
+        },
+        "inline_impl": "\"bg-red-100\""
+      },
+      "variant2": {
+        "symbol": {
+          "Symbol": {
+            "symbol": "variant2_bgClassname",
+            "import_path": "home/page.tsx",
+            "line": 20
+          }
+        },
+        "inline_impl": "\"bg-red-300\""
+      },
+      "variant3": {
+        "symbol": {
+          "Symbol": {
+            "symbol": "variant3_bgClassname",
+            "import_path": "home/page.tsx",
+            "line": 27
+          }
+        },
+        "inline_impl": "\"bg-red-400\""
+      },
+      "variant4": {
+        "symbol": {
+          "Symbol": {
+            "symbol": "variant4_bgClassname",
+            "import_path": "home/page.tsx",
+            "line": 33
+          }
+        },
+        "inline_impl": "\"bg-red-400\""
+      }
+    },
+    "usages": [
+      {
+        "file": "./app/home/page.tsx",
+        "line": 36,
+        "column": 35
+      }
+    ]
+  },
+  "Heading": {
+    "variants": {
+      "def": {
+        "symbol": {
+          "Symbol": {
+            "symbol": "Heading",
+            "import_path": "home/_components/heading.tsx",
+            "line": 4
+          }
+        },
+        "inline_impl": "() => <h1>Heading</h1>"
+      },
+      "variant1": {
+        "symbol": {
+          "Symbol": {
+            "symbol": "Heading",
+            "import_path": "variant1.const.tsx",
+            "line": 4
+          }
+        },
+        "inline_impl": "() => <h1>Variant1 Heading</h1>"
+      },
+      "variant2": {
+        "symbol": {
+          "Symlink": "def"
+        },
+        "inline_impl": "() => <h1>Heading</h1>"
+      },
+      "variant3": {
+        "symbol": {
+          "Symlink": "def"
+        },
+        "inline_impl": "() => <h1>Heading</h1>"
+      },
+      "variant4": {
+        "symbol": {
+          "Symlink": "def"
+        },
+        "inline_impl": "() => <h1>Heading</h1>"
+      }
+    },
+    "usages": [
+      {
+        "file": "./app/home/page.tsx",
+        "line": 37,
+        "column": 5
+      }
+    ]
+  }
+}

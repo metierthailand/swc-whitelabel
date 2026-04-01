@@ -1,6 +1,6 @@
 ---
 source: tests/integration_test.rs
-expression: final_output
+expression: idempt_output
 ---
 --- app/def.ts ---
 // whitelabel
@@ -96,75 +96,6 @@ export { type Variants, type WhitelabelConfig };
  * ============================================================================
  */
 
-
---- app/whitelabel/manifest.json ---
-{
-  "FLAG_ENABLE_FEATURE_A": {
-    "variants": {
-      "def": {
-        "symbol": {
-          "Symbol": {
-            "symbol": "FLAG_ENABLE_FEATURE_A",
-            "import_path": "def.ts",
-            "line": 2
-          }
-        },
-        "inline_impl": "true"
-      },
-      "v1": {
-        "symbol": {
-          "Symbol": {
-            "symbol": "V1_FLAG_ENABLE_FEATURE_A",
-            "import_path": "v1.ts",
-            "line": 2
-          }
-        },
-        "inline_impl": "false"
-      }
-    },
-    "usages": []
-  },
-  "GLOBAL_FEATURE": {
-    "variants": {
-      "def": {
-        "symbol": {
-          "Symbol": {
-            "symbol": "GLOBAL_FEATURE",
-            "import_path": "def.ts",
-            "line": 5
-          }
-        },
-        "inline_impl": "\"I am distributed everywhere!\""
-      },
-      "v1": {
-        "symbol": {
-          "Symlink": "def"
-        },
-        "inline_impl": "\"I am distributed everywhere!\""
-      }
-    },
-    "usages": []
-  },
-  "V1_ONLY_FEATURE": {
-    "variants": {
-      "def": {
-        "symbol": "Undefined",
-        "inline_impl": "undefined"
-      },
-      "v1": {
-        "symbol": {
-          "Symbol": {
-            "symbol": "V1_ONLY_FEATURE",
-            "import_path": "v1.ts",
-            "line": 5
-          }
-        },
-        "inline_impl": "\"Only present in def\""
-      }
-    },
-    "usages": []
-  }
-}
 
 --- app/whitelabel/v1.generated.tsx ---
 /* eslint-disable @typescript-eslint/no-require-imports */

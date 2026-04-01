@@ -21,10 +21,18 @@ use crate::{ast, common::registry::WhitelabelRegistry, util::transactional::TxFS
 use crate::{common::errorable::Errorable, generator};
 use crate::{config, module};
 
-use crate::util::{create_reporter, report};
+use crate::util::{report, runif};
 
-pub fn run(cwd: Option<PathBuf>) -> Result<()> {
-    config::env::init(cwd, "whitelabel.config.json")?;
+use crate::config::env::WhitelabelConfig;
+
+pub trait RunOptions {
+    fn provide_config(&self) -> Result<WhitelabelConfig>;
+}
+
+pub fn run<O: RunOptions>(options: O) -> Result<()> {
+    let config = options.provide_config()?;
+
+    config::env::init(config.clone())?;
 
     //  A central registry of every file we write to disk
     let mut modified_files: Vec<String> = Vec::new();
@@ -36,7 +44,8 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
 
     let cfg = config::env::with_config(|c| c.clone());
 
-    let report_modified_files = create_reporter(|c| c.output_file_name_only);
+    let report_modified_files = runif(|c| c.output_file_name_only);
+    let if_includes_manifest = runif(|c| c.with_manifest);
 
     // TODO: renaming detection
     // let _existing_whitelabel_scanner = module::existings_whitelabel::load(&cm);
@@ -165,11 +174,14 @@ pub fn run(cwd: Option<PathBuf>) -> Result<()> {
         // -----------------------------------------------------------------------------
         let codemod_modified_files = module::codemod::exec(&cm, &mut registry)?;
 
-        let manifest_file = output_dir.join("manifest.json");
-
-        TxFS::with_buffer(|fs| fs.write(&manifest_file, serde_json::to_string_pretty(&registry)?))?;
-
         modified_files.extend(codemod_modified_files);
+
+        if_includes_manifest(Box::new(move || {
+            let _ = TxFS::with_buffer(|fs| {
+                let manifest_file = output_dir.join("manifest.json");
+                fs.write(&manifest_file, serde_json::to_string_pretty(&registry)?)
+            });
+        }));
 
         // TODO: renaming detection
         // if !rename_map.is_empty() {

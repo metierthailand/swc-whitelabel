@@ -1,6 +1,6 @@
 use serde::{Serialize, Serializer};
 use std::collections::BTreeMap;
-use std::{collections::HashMap, path::PathBuf};
+use std::path::PathBuf;
 
 use crate::config::env::{self};
 use crate::util::compute_relative_import;
@@ -14,17 +14,17 @@ impl Serialize for WhitelabelSymbol {
     {
         // 1. Define a lightweight proxy that holds references to our strings
         #[derive(Serialize)]
-        enum SerializableSymbol<'a> {
+        enum SerializableSymbol {
             // Keep Symbol and Undefined identical
             Symbol {
-                symbol: &'a String,
-                import_path: &'a String,
-                line: &'a usize,
+                symbol: String,
+                import_path: String,
+                line: usize,
             },
             Undefined,
             // 🚨 FLATTEN THE SYMLINK 🚨
             // Instead of holding the whole Record, just hold the target string!
-            Symlink(&'a String),
+            Symlink(String),
         }
 
         // 2. Map our real enum to the proxy enum without cloning any data
@@ -34,11 +34,11 @@ impl Serialize for WhitelabelSymbol {
                 import_path,
                 line,
             } => SerializableSymbol::Symbol {
-                symbol,
-                import_path,
-                line,
+                symbol: symbol.clone(),
+                import_path: import_path.clone(),
+                line: line.clone(),
             },
-            WhitelabelSymbol::Symlink(record) => SerializableSymbol::Symlink(&record.target),
+            WhitelabelSymbol::Symlink(record) => SerializableSymbol::Symlink(record.target.clone()),
             WhitelabelSymbol::Undefined => SerializableSymbol::Undefined,
         };
 
@@ -68,18 +68,19 @@ impl Serialize for WhitelabelRegistry {
 
         // 1. Define a zero-allocation proxy struct for the JSON output
         #[derive(Serialize)]
-        struct ManifestEntry<'a> {
+        struct ManifestEntry {
             /// Maps a Target (e.g., "def", "v1") to its implementation record
-            variants: BTreeMap<&'a String, SerializableWhitelabelRecord>,
+            variants: BTreeMap<String, SerializableWhitelabelRecord>,
             /// The locations where this key is used in the AST
             usages: Vec<LocProxy>,
         }
 
         // 2. Build the cleanly formatted manifest
         // We group everything strictly by `Key` so the JSON is easy to read.
-        let mut manifest: BTreeMap<&String, ManifestEntry> = BTreeMap::new();
+        let mut manifest: BTreeMap<String, ManifestEntry> = BTreeMap::new();
 
-        for (key, targets) in &self.pivoted {
+        let g = self.pivoted.clone();
+        for (key, targets) in &g {
             let mut variants = BTreeMap::new();
 
             let mut sorted_targets: Vec<&String> = targets.iter().collect();
@@ -90,7 +91,7 @@ impl Serialize for WhitelabelRegistry {
             for target in sorted_targets {
                 if let Some(record) = self.table.get(target).and_then(|keys| keys.get(key)) {
                     variants.insert(
-                        target,
+                        target.clone(),
                         SerializableWhitelabelRecord {
                             symbol: record.symbol.to_owned(),
                             inline_impl: record.remark.to_owned(),
@@ -124,7 +125,7 @@ impl Serialize for WhitelabelRegistry {
                 })
                 .unwrap_or_default();
 
-            manifest.insert(key, ManifestEntry { variants, usages });
+            manifest.insert(key.clone(), ManifestEntry { variants, usages });
         }
 
         // 3. Delegate the actual serialization to the built HashMap
