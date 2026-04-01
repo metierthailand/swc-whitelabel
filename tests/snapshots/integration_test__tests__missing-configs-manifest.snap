@@ -9,7 +9,7 @@ expression: manifest_output
         "symbol": {
           "Symbol": {
             "symbol": "FLAG_ENABLE_FEATURE_A",
-            "import_path": "def.ts",
+            "import_path": "app/def.ts",
             "line": 2
           }
         },
@@ -19,7 +19,7 @@ expression: manifest_output
         "symbol": {
           "Symbol": {
             "symbol": "V1_FLAG_ENABLE_FEATURE_A",
-            "import_path": "v1.ts",
+            "import_path": "app/v1.ts",
             "line": 2
           }
         },
@@ -34,7 +34,7 @@ expression: manifest_output
         "symbol": {
           "Symbol": {
             "symbol": "GLOBAL_FEATURE",
-            "import_path": "def.ts",
+            "import_path": "app/def.ts",
             "line": 5
           }
         },
@@ -59,7 +59,7 @@ expression: manifest_output
         "symbol": {
           "Symbol": {
             "symbol": "V1_ONLY_FEATURE",
-            "import_path": "v1.ts",
+            "import_path": "app/v1.ts",
             "line": 5
           }
         },

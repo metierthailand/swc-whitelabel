@@ -9,7 +9,7 @@ expression: manifest_output
         "symbol": {
           "Symbol": {
             "symbol": "flag_is_enable",
-            "import_path": "index.tsx",
+            "import_path": "src/index.tsx",
             "line": 9
           }
         },
@@ -24,7 +24,7 @@ expression: manifest_output
         "symbol": {
           "Symbol": {
             "symbol": "replacable_title",
-            "import_path": "index.tsx",
+            "import_path": "src/index.tsx",
             "line": 4
           }
         },

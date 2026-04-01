@@ -9,7 +9,7 @@ expression: manifest_output
         "symbol": {
           "Symbol": {
             "symbol": "BG_COLOR",
-            "import_path": "home/page.tsx",
+            "import_path": "app/home/page.tsx",
             "line": 13
           }
         },
@@ -19,7 +19,7 @@ expression: manifest_output
         "symbol": {
           "Symbol": {
             "symbol": "variant1_bgClassname",
-            "import_path": "home/page.tsx",
+            "import_path": "app/home/page.tsx",
             "line": 7
           }
         },
@@ -29,7 +29,7 @@ expression: manifest_output
         "symbol": {
           "Symbol": {
             "symbol": "variant2_bgClassname",
-            "import_path": "home/page.tsx",
+            "import_path": "app/home/page.tsx",
             "line": 20
           }
         },
@@ -39,7 +39,7 @@ expression: manifest_output
         "symbol": {
           "Symbol": {
             "symbol": "variant3_bgClassname",
-            "import_path": "home/page.tsx",
+            "import_path": "app/home/page.tsx",
             "line": 27
           }
         },
@@ -49,7 +49,7 @@ expression: manifest_output
         "symbol": {
           "Symbol": {
             "symbol": "variant4_bgClassname",
-            "import_path": "home/page.tsx",
+            "import_path": "app/home/page.tsx",
             "line": 33
           }
         },
@@ -70,7 +70,7 @@ expression: manifest_output
         "symbol": {
           "Symbol": {
             "symbol": "Heading",
-            "import_path": "home/_components/heading.tsx",
+            "import_path": "app/home/_components/heading.tsx",
             "line": 4
           }
         },
@@ -80,7 +80,7 @@ expression: manifest_output
         "symbol": {
           "Symbol": {
             "symbol": "Heading",
-            "import_path": "variant1.const.tsx",
+            "import_path": "app/variant1.const.tsx",
             "line": 4
           }
         },

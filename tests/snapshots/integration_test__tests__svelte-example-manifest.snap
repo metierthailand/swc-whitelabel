@@ -9,7 +9,7 @@ expression: manifest_output
         "symbol": {
           "Symbol": {
             "symbol": "TITLE",
-            "import_path": "content.ts",
+            "import_path": "src/lib/content.ts",
             "line": 2
           }
         },
@@ -19,7 +19,7 @@ expression: manifest_output
         "symbol": {
           "Symbol": {
             "symbol": "TITLE",
-            "import_path": "wl.v2.ts",
+            "import_path": "src/lib/wl.v2.ts",
             "line": 2
           }
         },
@@ -40,7 +40,7 @@ expression: manifest_output
         "symbol": {
           "Symbol": {
             "symbol": "onclick",
-            "import_path": "store.ts",
+            "import_path": "src/lib/store.ts",
             "line": 6
           }
         },

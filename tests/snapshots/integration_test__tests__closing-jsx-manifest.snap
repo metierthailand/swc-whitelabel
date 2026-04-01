@@ -9,7 +9,7 @@ expression: manifest_output
         "symbol": {
           "Symbol": {
             "symbol": "Button",
-            "import_path": "index.tsx",
+            "import_path": "src/index.tsx",
             "line": 23
           }
         },
@@ -19,7 +19,7 @@ expression: manifest_output
         "symbol": {
           "Symbol": {
             "symbol": "Button",
-            "import_path": "wl.mar.tsx",
+            "import_path": "src/wl.mar.tsx",
             "line": 15
           }
         },
@@ -40,7 +40,7 @@ expression: manifest_output
         "symbol": {
           "Symbol": {
             "symbol": "Footer",
-            "import_path": "index.tsx",
+            "import_path": "src/index.tsx",
             "line": 18
           }
         },
@@ -50,7 +50,7 @@ expression: manifest_output
         "symbol": {
           "Symbol": {
             "symbol": "Footer",
-            "import_path": "wl.mar.tsx",
+            "import_path": "src/wl.mar.tsx",
             "line": 12
           }
         },
@@ -71,7 +71,7 @@ expression: manifest_output
         "symbol": {
           "Symbol": {
             "symbol": "Heading",
-            "import_path": "index.tsx",
+            "import_path": "src/index.tsx",
             "line": 6
           }
         },
@@ -81,7 +81,7 @@ expression: manifest_output
         "symbol": {
           "Symbol": {
             "symbol": "MarHeading",
-            "import_path": "wl.mar.tsx",
+            "import_path": "src/wl.mar.tsx",
             "line": 4
           }
         },
@@ -102,7 +102,7 @@ expression: manifest_output
         "symbol": {
           "Symbol": {
             "symbol": "Layout",
-            "import_path": "index.tsx",
+            "import_path": "src/index.tsx",
             "line": 13
           }
         },
@@ -112,7 +112,7 @@ expression: manifest_output
         "symbol": {
           "Symbol": {
             "symbol": "Layout",
-            "import_path": "wl.mar.tsx",
+            "import_path": "src/wl.mar.tsx",
             "line": 7
           }
         },

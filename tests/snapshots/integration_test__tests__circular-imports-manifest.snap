@@ -9,7 +9,7 @@ expression: manifest_output
         "symbol": {
           "Symbol": {
             "symbol": "foo",
-            "import_path": "src.ts",
+            "import_path": "app/src.ts",
             "line": 2
           }
         },

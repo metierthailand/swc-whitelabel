@@ -2,7 +2,7 @@ use serde::{Serialize, Serializer};
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
-use crate::config::env::{self};
+use crate::config::env::{self, with_config};
 use crate::util::compute_relative_import;
 
 use crate::common::registry::{WhitelabelRegistry, WhitelabelSymbol};
@@ -27,6 +27,8 @@ impl Serialize for WhitelabelSymbol {
             Symlink(String),
         }
 
+        let src = with_config(|cfg| cfg.src.clone());
+
         // 2. Map our real enum to the proxy enum without cloning any data
         let proxy = match self {
             WhitelabelSymbol::Symbol {
@@ -35,7 +37,7 @@ impl Serialize for WhitelabelSymbol {
                 line,
             } => SerializableSymbol::Symbol {
                 symbol: symbol.clone(),
-                import_path: import_path.clone(),
+                import_path: format!("{}{}", src, import_path.clone()),
                 line: *line,
             },
             WhitelabelSymbol::Symlink(record) => SerializableSymbol::Symlink(record.target.clone()),
