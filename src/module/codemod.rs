@@ -19,7 +19,7 @@ use crate::util::report;
 use crate::util::resolver::TsImportPathResolver;
 use crate::util::transactional::TxFS;
 
-pub fn exec(cm: &Lrc<SourceMap>, registry: &WhitelabelRegistry) -> Result<Vec<String>> {
+pub fn exec(cm: &Lrc<SourceMap>, registry: &mut WhitelabelRegistry) -> Result<Vec<String>> {
     let mut modified_files: Vec<String> = Vec::new();
     let import_path_resolver = env::with_config(|cfg| {
         let tsconfig = tsconfig::load(cfg.tsconfig.clone())?;
@@ -72,8 +72,13 @@ pub fn exec(cm: &Lrc<SourceMap>, registry: &WhitelabelRegistry) -> Result<Vec<St
             continue;
         }
 
-        let mut rewriter =
-            WhitelabelRewriter::new(cm.clone(), target_ids, false, &import_path_resolver);
+        let mut rewriter = WhitelabelRewriter::new(
+            cm.clone(),
+            target_ids,
+            false,
+            &import_path_resolver,
+            registry,
+        );
         program.visit_mut_with(&mut rewriter);
 
         if rewriter.into_result()? {

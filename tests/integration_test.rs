@@ -1,17 +1,19 @@
 #[cfg(test)]
 mod tests {
+    use anyhow::Result;
     use biome_formatter::{IndentStyle, IndentWidth, LineWidth};
     use biome_js_formatter::context::BracketSameLine;
     use biome_js_formatter::{context::JsFormatOptions, format_node};
     use biome_js_parser::{JsParserOptions, parse};
     use biome_js_syntax::JsFileSource;
     use insta::assert_snapshot;
-    use std::fs;
     use std::path::{Path, PathBuf};
+    use std::{fs, io};
     use tempfile::TempDir;
     use testing::fixture;
     use walkdir::WalkDir;
-    // use wl_extractor::exec::run;
+    use wl_extractor::config::env::WhitelabelConfig;
+    use wl_extractor::run::RunOptions;
 
     // --- 1. The Isolated Workspace Helper ---
 
@@ -96,6 +98,68 @@ mod tests {
             }
             results
         }
+
+        pub fn file_snapshot(&self, file_name: String) -> String {
+            let mut full_path = self.path().to_path_buf();
+            full_path.push(file_name);
+            return fs::read_to_string(full_path.as_path()).unwrap();
+        }
+
+        pub fn remove_file(&self, file_name: String) -> io::Result<()> {
+            let mut full_path = self.path().to_path_buf();
+            full_path.push(file_name);
+            return fs::remove_file(full_path.as_path());
+        }
+    }
+
+    impl AsRef<TestWorkspace> for TestWorkspace {
+        fn as_ref(&self) -> &TestWorkspace {
+            return &self;
+        }
+    }
+
+    #[derive(Clone)]
+    struct TestWorkspaceConfig {
+        cwd: PathBuf,
+        with_manifest: bool,
+    }
+
+    impl From<&TestWorkspace> for TestWorkspaceConfig {
+        fn from(value: &TestWorkspace) -> Self {
+            Self {
+                cwd: value.path().to_path_buf(),
+                with_manifest: false,
+            }
+        }
+    }
+
+    impl RunOptions for TestWorkspaceConfig {
+        fn provide_config(&self) -> Result<WhitelabelConfig> {
+            let cwd = self.cwd.clone();
+            let cfg_file = cwd.join("whitelabel.config.json");
+
+            let mut config = if let Ok(config_str) = fs::read_to_string(&cfg_file) {
+                serde_json::from_str::<WhitelabelConfig>(&config_str)?
+            } else {
+                WhitelabelConfig::default()
+            };
+
+            config.tsconfig = cwd.join(&config.tsconfig).to_string_lossy().to_string();
+            config.with_manifest = self.with_manifest;
+
+            let temp_dir_as_cwd = WhitelabelConfig { cwd, ..config };
+
+            Ok(temp_dir_as_cwd)
+        }
+    }
+
+    impl TestWorkspaceConfig {
+        fn with_manifest(&self) -> TestWorkspaceConfig {
+            TestWorkspaceConfig {
+                with_manifest: true,
+                ..self.clone()
+            }
+        }
     }
 
     // --- 2. The Auto-Generated Fixture Runner ---
@@ -110,29 +174,36 @@ mod tests {
 
         // 2. Clone the fixture into a safe, isolated temporary directory
         let workspace = TestWorkspace::from_fixture(fixture_root);
+        let test_config: TestWorkspaceConfig = workspace.as_ref().into();
 
         // 3. RUN YOUR TOOL
         // Note: You will need to expose your main application logic as a
         // library function that accepts a working directory, rather than
         // relying on the global `env::current_dir()`.
 
-        if let Err(e) = wl_extractor::run::run(Some(workspace.path().to_path_buf())) {
+        let x = test_config.with_manifest().clone();
+
+        if let Err(e) = wl_extractor::run::run(x) {
             assert_snapshot!(fixture_name.to_string() + "-error", e);
             return;
         }
 
-        // FIXME: assertion should fails if there is an error snapshot.
+        let m = format!(
+            "{}{}/manifest.json",
+            test_config.provide_config().unwrap().src,
+            test_config.provide_config().unwrap().output_dir
+        );
+        let manifest_output = workspace.file_snapshot(m.clone());
+        let _ = workspace.remove_file(m);
 
-        // 4. Assert the Results!
-        // This takes everything in the temp folder and compares it to the saved snapshot
+        assert_snapshot!(fixture_name.to_string() + "-manifest", manifest_output);
+
+        let _ = wl_extractor::run::run(test_config.clone());
         let final_output = workspace.snapshot_results();
-
-        // We pass `fixture_name` so insta names the snapshot file correctly!
         assert_snapshot!(fixture_name.to_string(), final_output);
 
         // Idempotent test
-
-        let _ = wl_extractor::run::run(Some(workspace.path().to_path_buf()));
+        let _ = wl_extractor::run::run(test_config.clone());
         let idempt_output = workspace.snapshot_results();
         assert_snapshot!(fixture_name.to_string(), idempt_output);
     }

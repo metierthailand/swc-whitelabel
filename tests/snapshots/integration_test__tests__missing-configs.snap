@@ -1,6 +1,6 @@
 ---
 source: tests/integration_test.rs
-expression: final_output
+expression: idempt_output
 ---
 --- app/def.ts ---
 // whitelabel
@@ -124,7 +124,6 @@ export default whitelabel;
 import type { FLAG_ENABLE_FEATURE_A as def_9cdb2b74dedf4cf3 } from "../def";
 import type { V1_FLAG_ENABLE_FEATURE_A as v1_408bf262d43a12ce } from "../v1";
 import type { GLOBAL_FEATURE as def_f056fb1c2c2d2377 } from "../def";
-import type { GLOBAL_FEATURE as v1_f056fb1c2c2d2377 } from "../def";
 import type { V1_ONLY_FEATURE as v1_b19f5ed50a20953b } from "../v1";
 export interface WhitelabelConfig {
   /**
@@ -137,14 +136,14 @@ export interface WhitelabelConfig {
    */
   FLAG_ENABLE_FEATURE_A: typeof def_9cdb2b74dedf4cf3 | typeof v1_408bf262d43a12ce;
   /**
-   * ### 🏷️ Available for: {@link def_f056fb1c2c2d2377 | `def`} | {@link v1_f056fb1c2c2d2377 | `v1`}
+   * ### 🏷️ Available for: {@link def_f056fb1c2c2d2377 | `def`} | `v1` = {@link def_f056fb1c2c2d2377 | def}
    * @copyright **def**
    * @default
    * ```tsx
    * "I am distributed everywhere!"
    * ```
    */
-  GLOBAL_FEATURE: typeof def_f056fb1c2c2d2377 | typeof v1_f056fb1c2c2d2377;
+  GLOBAL_FEATURE: typeof def_f056fb1c2c2d2377;
   /**
    * ### 🏷️ Available for: {@link v1_b19f5ed50a20953b | `v1`}
    * @copyright **def**

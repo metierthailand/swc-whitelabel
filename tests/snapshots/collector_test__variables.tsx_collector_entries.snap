@@ -1,12 +1,13 @@
 ---
 source: tests/collector_test.rs
-expression: "collector.entries.iter_mut().map(|e|\n{\n    let to_rel =\n    env::with_config(|cfg|\n    {\n        util::compute_relative_import(cfg.cwd.as_path(),\n        PathBuf::from(&e.import_path).as_path(),)\n    }); e.import_path = to_rel.unwrap(); e\n}).collect::<Vec<&mut WhitelabelEntry>>()"
+expression: "entries.iter_mut().map(|e|\n{\n    let to_rel =\n    env::with_config(|cfg|\n    {\n        util::compute_relative_import(cfg.cwd.as_path(),\n        PathBuf::from(&e.import_path).as_path(),)\n    }); e.import_path = to_rel.unwrap(); e\n}).collect::<Vec<&mut WhitelabelEntry>>()"
 ---
 - target:
     Targetted: def
   key: TITLE
   symbol: TITLE
   import_path: "./tests/fixtures/collector/accept_src/variables.tsx"
+  line: 7
   _experiment_remark: "\"ELTIT\""
   optional: false
 - target:
@@ -14,6 +15,7 @@ expression: "collector.entries.iter_mut().map(|e|\n{\n    let to_rel =\n    env:
   key: TITLE_1
   symbol: TITLE_1
   import_path: "./tests/fixtures/collector/accept_src/variables.tsx"
+  line: 14
   _experiment_remark: "\"1_ELTIT\""
   optional: false
 - target:
@@ -21,6 +23,7 @@ expression: "collector.entries.iter_mut().map(|e|\n{\n    let to_rel =\n    env:
   key: TITLE_2
   symbol: TITLE_2
   import_path: "./tests/fixtures/collector/accept_src/variables.tsx"
+  line: 21
   _experiment_remark: "\"2_ELTIT\""
   optional: false
 - target:
@@ -28,6 +31,7 @@ expression: "collector.entries.iter_mut().map(|e|\n{\n    let to_rel =\n    env:
   key: TITLE_3
   symbol: TITLE_3
   import_path: "./tests/fixtures/collector/accept_src/variables.tsx"
+  line: 28
   _experiment_remark: "\"3_ELTIT\""
   optional: false
 - target:
@@ -35,6 +39,7 @@ expression: "collector.entries.iter_mut().map(|e|\n{\n    let to_rel =\n    env:
   key: CFG_TITLE_3
   symbol: CFG_TITLE_3
   import_path: "./tests/fixtures/collector/accept_src/variables.tsx"
+  line: 34
   _experiment_remark: "\"3_ELTIT_GFC\""
   optional: false
 - target:
@@ -42,6 +47,7 @@ expression: "collector.entries.iter_mut().map(|e|\n{\n    let to_rel =\n    env:
   key: TITLE
   symbol: TITLE_4
   import_path: "./tests/fixtures/collector/accept_src/variables.tsx"
+  line: 41
   _experiment_remark: "\"4_ELTIT\""
   optional: false
 - target:
@@ -49,6 +55,7 @@ expression: "collector.entries.iter_mut().map(|e|\n{\n    let to_rel =\n    env:
   key: TITLE
   symbol: CFG_TITLE_4
   import_path: "./tests/fixtures/collector/accept_src/variables.tsx"
+  line: 48
   _experiment_remark: "\"4_ELTIT_GFC\""
   optional: false
 - target:
@@ -56,6 +63,7 @@ expression: "collector.entries.iter_mut().map(|e|\n{\n    let to_rel =\n    env:
   key: TITLE
   symbol: CFG_TITLE_4_1
   import_path: "./tests/fixtures/collector/accept_src/variables.tsx"
+  line: 55
   _experiment_remark: "\"1_4_ELTIT_GFC\""
   optional: false
 - target:
@@ -63,6 +71,7 @@ expression: "collector.entries.iter_mut().map(|e|\n{\n    let to_rel =\n    env:
   key: TITLE
   symbol: CFG_TITLE_4_2
   import_path: "./tests/fixtures/collector/accept_src/variables.tsx"
+  line: 62
   _experiment_remark: "\"2_4_ELTIT_GFC\""
   optional: false
 - target:
@@ -70,6 +79,7 @@ expression: "collector.entries.iter_mut().map(|e|\n{\n    let to_rel =\n    env:
   key: TITLE
   symbol: CFG_TITLE_4_3
   import_path: "./tests/fixtures/collector/accept_src/variables.tsx"
+  line: 70
   _experiment_remark: "\"3_4_ELTIT_GFC\""
   optional: false
 - target:
@@ -77,6 +87,7 @@ expression: "collector.entries.iter_mut().map(|e|\n{\n    let to_rel =\n    env:
   key: TITLE
   symbol: TITLE_5
   import_path: "./tests/fixtures/collector/accept_src/variables.tsx"
+  line: 77
   _experiment_remark: "\"5_ELTIT\""
   optional: false
 - target:
@@ -84,6 +95,7 @@ expression: "collector.entries.iter_mut().map(|e|\n{\n    let to_rel =\n    env:
   key: MULTIPLE_TARGETS
   symbol: MULTIPLE_TARGETS
   import_path: "./tests/fixtures/collector/accept_src/variables.tsx"
+  line: 84
   _experiment_remark: "[\"a\", \"b\"]"
   optional: false
 - target:
@@ -91,5 +103,6 @@ expression: "collector.entries.iter_mut().map(|e|\n{\n    let to_rel =\n    env:
   key: MULTIPLE_TARGETS
   symbol: MULTIPLE_TARGETS
   import_path: "./tests/fixtures/collector/accept_src/variables.tsx"
+  line: 84
   _experiment_remark: "[\"a\", \"b\"]"
   optional: false

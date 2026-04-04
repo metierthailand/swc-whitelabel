@@ -11,21 +11,25 @@ use testing::fixture;
 use wl_extractor::{
     ast::collector::{WhitelabelCollector, WhitelabelEntry},
     common::errorable::Errorable,
-    config::env,
+    config::env::{self, WhitelabelConfig},
     util,
 };
 
 #[fixture("tests/fixtures/collector/**/*.tsx")]
 fn test_collectors(path: PathBuf) {
-    let cm: Lrc<SourceMap> = Default::default();
-    let comments = SingleThreadedComments::default();
-    match env::init(
-        None,
-        "tests/fixtures/integrations/basic-usages/whitelabel.config.json",
-    ) {
+    // Setup custom env before run
+    match env::init(WhitelabelConfig {
+        src: "../collector".to_string(),
+        cwd: std::env::current_dir().unwrap(),
+        ..Default::default()
+    }) {
         Ok(_) => {}
         Err(e) => eprintln!("{:?}", e),
     }
+
+    let cm: Lrc<SourceMap> = Default::default();
+    let comments = SingleThreadedComments::default();
+
     let mut collector = WhitelabelCollector::new(&cm, &comments);
     let fm = cm.load_file(&path).unwrap();
 

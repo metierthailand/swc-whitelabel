@@ -1,6 +1,6 @@
 ---
 source: tests/integration_test.rs
-expression: idempt_output
+expression: final_output
 ---
 --- src/index.tsx ---
 import whitelabel from "./whitelabel";

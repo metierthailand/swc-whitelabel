@@ -1,6 +1,6 @@
 use anyhow::Result;
 use serde::Deserialize;
-use std::{cell::RefCell, env, fs, path::PathBuf};
+use std::{cell::RefCell, path::PathBuf};
 
 fn default_tsconfig() -> String {
     "tsconfig.json".to_string()
@@ -28,6 +28,8 @@ pub struct WhitelabelConfig {
     #[serde(skip)]
     pub output_file_name_only: bool,
     #[serde(skip)]
+    pub with_manifest: bool,
+    #[serde(skip)]
     pub cwd: PathBuf,
 }
 
@@ -40,6 +42,7 @@ impl Default for WhitelabelConfig {
             default_target: "def".to_owned(),
             tsconfig: "tsconfig.json".to_owned(),
             output_file_name_only: Default::default(),
+            with_manifest: Default::default(),
             cwd: Default::default(),
         }
     }
@@ -49,32 +52,8 @@ thread_local! {
     static CONFIG: RefCell<Option<WhitelabelConfig>> = const { RefCell::new(None) };
 }
 
-pub fn init(cwd: Option<PathBuf>, config_filename: &str) -> Result<()> {
-    let resolved_cwd = cwd.map_or_else(env::current_dir, Ok)?;
-    let mut config: WhitelabelConfig = {
-        let mut resolved_file = resolved_cwd.clone();
-
-        resolved_file.push(config_filename);
-
-        // Read the file to a string
-        if let Ok(config_str) = fs::read_to_string(&resolved_file)
-            && let Ok(config_from_json) = serde_json::from_str::<WhitelabelConfig>(&config_str)
-        {
-            config_from_json
-        } else {
-            Default::default()
-        }
-    };
-
-    let mut resolved_tsconfig_path = resolved_cwd.clone();
-    resolved_tsconfig_path.push(config.tsconfig);
-
-    config.output_file_name_only = std::env::args().any(|arg| arg == "--file-name-only");
-    config.cwd = resolved_cwd;
-
-    config.tsconfig = resolved_tsconfig_path.to_string_lossy().to_string();
-
-    // Lock the config into our global state. It can never be overwritten!
+pub fn init(config: WhitelabelConfig) -> Result<()> {
+    // Lock the provided config into our global state.
     CONFIG.with(|c| {
         *c.borrow_mut() = Some(config);
     });

@@ -1,0 +1,64 @@
+---
+source: tests/integration_test.rs
+expression: manifest_output
+---
+{
+  "TITLE": {
+    "variants": {
+      "def": {
+        "symbol": {
+          "Symbol": {
+            "symbol": "TITLE",
+            "import_path": "src/lib/content.ts",
+            "line": 2
+          }
+        },
+        "inline_impl": "\"abcd\""
+      },
+      "v2": {
+        "symbol": {
+          "Symbol": {
+            "symbol": "TITLE",
+            "import_path": "src/lib/wl.v2.ts",
+            "line": 2
+          }
+        },
+        "inline_impl": "\"This is V2\""
+      }
+    },
+    "usages": [
+      {
+        "file": "./src/lib/index.ts",
+        "line": 6,
+        "column": 21
+      }
+    ]
+  },
+  "onclick": {
+    "variants": {
+      "def": {
+        "symbol": {
+          "Symbol": {
+            "symbol": "onclick",
+            "import_path": "src/lib/store.ts",
+            "line": 6
+          }
+        },
+        "inline_impl": "function onclick() {\n  count.update((c) => c + 1);\n}"
+      },
+      "v2": {
+        "symbol": {
+          "Symlink": "def"
+        },
+        "inline_impl": "function onclick() {\n  count.update((c) => c + 1);\n}"
+      }
+    },
+    "usages": [
+      {
+        "file": "./src/lib/index.ts",
+        "line": 5,
+        "column": 23
+      }
+    ]
+  }
+}

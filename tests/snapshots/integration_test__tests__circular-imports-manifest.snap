@@ -1,0 +1,27 @@
+---
+source: tests/integration_test.rs
+expression: manifest_output
+---
+{
+  "foo": {
+    "variants": {
+      "def": {
+        "symbol": {
+          "Symbol": {
+            "symbol": "foo",
+            "import_path": "app/src.ts",
+            "line": 2
+          }
+        },
+        "inline_impl": "\"foo\""
+      }
+    },
+    "usages": [
+      {
+        "file": "./app/src.ts",
+        "line": 3,
+        "column": 12
+      }
+    ]
+  }
+}

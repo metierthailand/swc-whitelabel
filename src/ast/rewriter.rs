@@ -9,22 +9,24 @@ use swc_core::ecma::{
 };
 
 use crate::common::errorable::Errorable;
+use crate::common::registry::WhitelabelRegistry;
 use crate::config::env;
 use crate::util::resolver::TsImportPathResolver;
 use crate::util::{self, cname};
 
-pub struct WhitelabelRewriter {
+pub struct WhitelabelRewriter<'a> {
     pub source_map: Lrc<SourceMap>,
     pub target_ids: HashMap<Id, String>,
     pub has_modified: bool,
     resolver: TsImportPathResolver,
     jsx_stack: Vec<JSXElementName>,
     errors: Vec<Error>,
+    registry: &'a mut WhitelabelRegistry,
 }
 
 const KEYWORD: &str = "whitelabel";
 
-impl Errorable<bool> for WhitelabelRewriter {
+impl Errorable<bool> for WhitelabelRewriter<'_> {
     fn into_result(self) -> anyhow::Result<bool> {
         if !self.errors.is_empty() {
             return Err(anyhow!("{}", self.format_multiple_errors(&self.errors)));
@@ -33,12 +35,13 @@ impl Errorable<bool> for WhitelabelRewriter {
     }
 }
 
-impl WhitelabelRewriter {
+impl<'a> WhitelabelRewriter<'a> {
     pub fn new(
         source_map: Lrc<SourceMap>,
         target_ids: HashMap<Id, String>,
         has_modified: bool,
         resolver: &TsImportPathResolver,
+        registry: &'a mut WhitelabelRegistry,
     ) -> Self {
         Self {
             source_map,
@@ -47,6 +50,7 @@ impl WhitelabelRewriter {
             resolver: resolver.clone(),
             jsx_stack: vec![],
             errors: vec![],
+            registry,
         }
     }
 
@@ -123,7 +127,7 @@ impl WhitelabelRewriter {
     }
 }
 
-impl VisitMut for WhitelabelRewriter {
+impl VisitMut for WhitelabelRewriter<'_> {
     noop_visit_mut_type!();
 
     fn visit_mut_expr(&mut self, expr: &mut Expr) {
@@ -131,6 +135,7 @@ impl VisitMut for WhitelabelRewriter {
         if let Expr::Ident(ident) = expr
             && let Some(wl_key) = self.target_ids.get(&ident.to_id())
         {
+            let bytepos = ident.span.lo;
             *expr = Expr::Member(MemberExpr {
                 span: ident.span,
                 obj: Box::new(Expr::Ident(Ident::new(
@@ -140,6 +145,8 @@ impl VisitMut for WhitelabelRewriter {
                 ))),
                 prop: MemberProp::Ident(IdentName::new(wl_key.as_str().into(), DUMMY_SP)),
             });
+            self.registry
+                .record(wl_key, self.source_map.lookup_char_pos(bytepos));
             self.has_modified = true;
         }
     }
@@ -150,6 +157,8 @@ impl VisitMut for WhitelabelRewriter {
         if let Prop::Shorthand(ident) = prop
             && let Some(wl_key) = self.target_ids.get(&ident.to_id())
         {
+            let bytepos = ident.span.lo;
+
             *prop = Prop::KeyValue(KeyValueProp {
                 key: PropName::Ident(IdentName::new(ident.sym.clone(), DUMMY_SP)),
                 value: Box::new(Expr::Member(MemberExpr {
@@ -162,6 +171,9 @@ impl VisitMut for WhitelabelRewriter {
                     prop: MemberProp::Ident(IdentName::new(wl_key.as_str().into(), DUMMY_SP)),
                 })),
             });
+
+            self.registry
+                .record(wl_key, self.source_map.lookup_char_pos(bytepos));
             self.has_modified = true;
         }
     }
@@ -171,6 +183,8 @@ impl VisitMut for WhitelabelRewriter {
         if let JSXElementName::Ident(ident) = &node.name
             && let Some(wl_key) = self.target_ids.get(&ident.to_id())
         {
+            let bytepos = ident.span.lo;
+
             node.name = JSXElementName::JSXMemberExpr(JSXMemberExpr {
                 span: ident.span,
                 obj: JSXObject::Ident(Ident::new(
@@ -181,6 +195,8 @@ impl VisitMut for WhitelabelRewriter {
                 prop: IdentName::new(wl_key.as_str().into(), DUMMY_SP),
             });
 
+            self.registry
+                .record(wl_key, self.source_map.lookup_char_pos(bytepos));
             self.has_modified = true;
             if !node.self_closing {
                 self.jsx_stack.push(node.name.clone())

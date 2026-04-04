@@ -34,6 +34,16 @@ fn format_doc(entry: &[&WhitelabelRecord]) -> String {
                 e.symbol.short_id(),
                 e.target,
             )),
+            WhitelabelSymbol::Symlink(_) => {
+                let root_record = e.symbol.get_root()?;
+                Some(format!(
+                    "`{}` = {{@link {}_{:x} | {}}}",
+                    e.target,
+                    root_record.target,
+                    root_record.symbol.short_id(),
+                    root_record.target
+                ))
+            }
             WhitelabelSymbol::Undefined => None,
         })
         .collect::<Vec<_>>();
@@ -80,6 +90,7 @@ pub fn generate(registry: &WhitelabelRegistry) -> String {
                 WhitelabelSymbol::Symbol {
                     symbol,
                     import_path,
+                    ..
                 } => {
                     index_content.push_str(&format!(
                         "import type {{ {} as {}_{:x} }} from '{}';",
@@ -93,6 +104,7 @@ pub fn generate(registry: &WhitelabelRegistry) -> String {
                 WhitelabelSymbol::Undefined => {
                     typedef.push_str("| undefined");
                 }
+                WhitelabelSymbol::Symlink(_) => {}
             }
         }
 

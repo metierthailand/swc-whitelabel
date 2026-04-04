@@ -78,6 +78,7 @@ pub struct WhitelabelEntry {
     pub key: String,
     pub symbol: String,
     pub import_path: String,
+    pub line: usize,
     pub _experiment_remark: String,
     pub optional: bool,
 }
@@ -174,6 +175,12 @@ impl<'a> WhitelabelCollector<'a> {
         loc.file.name.to_string()
     }
 
+    fn get_loc(&self, span: swc_core::common::Span) -> usize {
+        let loc = self.source_map.lookup_char_pos(span.lo);
+
+        loc.line
+    }
+
     fn register(
         &mut self,
         symbol: String,
@@ -191,6 +198,7 @@ impl<'a> WhitelabelCollector<'a> {
                         key: final_key.clone(),
                         symbol: symbol.clone(),
                         import_path: self.get_filename(span),
+                        line: self.get_loc(span),
                         _experiment_remark: self
                             .source_map
                             .span_to_snippet(span)
@@ -204,6 +212,7 @@ impl<'a> WhitelabelCollector<'a> {
                 key: final_key.clone(),
                 symbol,
                 import_path: self.get_filename(span),
+                line: self.get_loc(span),
                 _experiment_remark: self.source_map.span_to_snippet(span).unwrap_or_default(),
             }),
         }

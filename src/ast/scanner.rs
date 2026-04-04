@@ -15,10 +15,10 @@ use crate::util::{cname, report};
 
 // Scans the file for imports or local declarations that match known whitelabel symbols
 pub struct SymbolScanner<'a> {
-    pub source_map: Lrc<SourceMap>,
-    pub registry: &'a WhitelabelRegistry,
-    pub target_ids: HashMap<Id, String>,
-    pub resolver: &'a TsImportPathResolver,
+    source_map: Lrc<SourceMap>,
+    registry: &'a mut WhitelabelRegistry,
+    target_ids: HashMap<Id, String>,
+    resolver: &'a TsImportPathResolver,
     current_file_name: Option<Lrc<swc_core::common::FileName>>,
     errors: Vec<Error>,
 }
@@ -34,7 +34,7 @@ impl<'a> Errorable<HashMap<Id, String>> for SymbolScanner<'a> {
 
 impl<'a> SymbolScanner<'a> {
     pub fn new(
-        registry: &'a WhitelabelRegistry,
+        registry: &'a mut WhitelabelRegistry,
         source_map: Lrc<SourceMap>,
         resolver: &'a TsImportPathResolver,
     ) -> Self {
@@ -131,5 +131,34 @@ impl<'a> Visit for SymbolScanner<'a> {
         }
 
         decl.visit_children_with(self);
+    }
+
+    fn visit_jsx_member_expr(&mut self, jsx_member: &JSXMemberExpr) {
+        if let JSXObject::Ident(ident) = &jsx_member.obj
+            && ident.sym == "whitelabel"
+        {
+            let bytepos = ident.span.lo;
+
+            self.registry.record(
+                jsx_member.prop.sym.as_str(),
+                self.source_map.lookup_char_pos(bytepos),
+            );
+        }
+
+        jsx_member.visit_children_with(self);
+    }
+
+    fn visit_member_expr(&mut self, member: &MemberExpr) {
+        if let Expr::Ident(obj) = &*member.obj
+            && obj.sym == "whitelabel"
+            && let MemberProp::Ident(prop) = &member.prop
+        {
+            let bytepos = obj.span.lo;
+
+            self.registry
+                .record(prop.sym.as_str(), self.source_map.lookup_char_pos(bytepos));
+        }
+
+        member.visit_children_with(self);
     }
 }
